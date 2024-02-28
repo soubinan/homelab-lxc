@@ -1,4 +1,3 @@
-# -o image.architecture=amd64 -o image.release=bookworm -o image.variant=cloud -o source.url="http://ftp.us.debian.org/debian"
 image:
   distribution: debian
   release: stable
