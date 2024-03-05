@@ -1,0 +1,58 @@
+name: Homarr
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+env:
+  PROJECT_URL: https://github.com/soubinan/homelab-lxc
+  PROJECT_SOURCE: https://github.com/ajnart/homarr
+  AUTHOR: https://github.com/soubinan
+  APP_NAME: homarr
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        distribution:
+          - debian
+        architecture:
+          - amd64
+        release:
+          - bookworm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Distrobuilder
+        run: |
+          sudo apt-get install -y debootstrap squashfs-tools jq
+          sudo snap install distrobuilder --classic
+          mkdir $HOME/output/$APP_NAME
+          mkdir /tmp/cache/$APP_NAME
+          curl --location --remote-name --url "$(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.assets[] | select(.name|test("amd64.deb")) | .browser_download_url')" -o /tmp/hurl_amd64.deb
+          sudo apt-get install -y /tmp/hurl_amd64.deb
+
+      - name: Get application version
+        run: |
+          echo "APP_VERSION="$(curl -s $PROJECT_SOURCE/master/package.json | jq -r ".version") >> $GITHUB_ENV
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        if: github.event_name == 'pull_request'
+        run: |
+          sudo distrobuilder --cache-dir /tmp/cache/$APP_NAME build-lxc ${{ github.workspace }}/templates/${APP_NAME}.yml -o image.distribution=${{ matrix.distribution }} -o image.architecture=${{ matrix.architecture }} -o image.release=${{ matrix.release }} -o image.serial=$APP_VERSION -o source.url="http://ftp.us.debian.org/debian" $HOME/output/$APP_NAME/
+          mv $HOME/output/$APP_NAME/rootfs.tar.xz $HOME/output/$APP_NAME/$APP_NAME-$APP_VERSION.tar.xz
+          mv $HOME/output/$APP_NAME/meta.tar.xz $HOME/output/$APP_NAME/$APP_NAME-$APP_VERSION-meta.tar.xz
+          ls -lash $HOME/output/*
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: $APP_NAME-$APP_VERSION
+          path: $HOME/output/$APP_NAME/$APP_NAME-$APP_VERSION*
+          retention-days: 45
+          overwrite: true
