@@ -54,23 +54,25 @@ jobs:
           echo "ARTIFACT_SIZE=$(du -sh ./$APP_NAME-$APP_VERSION.tar.xz| cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        id: upload-artifact
+      - name: Store RootFS file
+        uses: cloudflare/wrangler-action@v3
         with:
-          name: ${{env.APP_NAME}}-${{env.APP_VERSION}}-${{matrix.architecture}}
-          path: |
-            ./${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz
-            ./${{env.APP_NAME}}-${{env.APP_VERSION}}-meta.tar.xz
-          retention-days: 45
-          overwrite: true
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: r2 object put lxc-images/${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz -f ./${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz
+          postCommands: 
+
+      - name: Store Meta file
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: r2 object put lxc-images/${{env.APP_NAME}}-${{env.APP_VERSION}}-meta.tar.xz -f ./${{env.APP_NAME}}-${{env.APP_VERSION}}-meta.tar.xz
 
       - name: Publish build info
         run: |
           hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
             --variable app_name=$APP_NAME --variable app_version=$APP_VERSION \
             --variable arch=${{matrix.architecture}} --variable dist=${{matrix.distribution}} \
-            --variable dist_release=${{matrix.release}} --variable build_id=$BUILD_ID \
+            --variable dist_release=${{matrix.release}} --variable build_id=${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz\
             --variable size=$ARTIFACT_SIZE --variable source=$PROJECT_SOURCE\
             .github/publish_build.hurl
           echo
@@ -78,4 +80,3 @@ jobs:
         env:
           HOMELAB_LXC_EP: ${{secrets.HOMELAB_LXC_EP}}
           HOMELAB_LXC_TOKEN: ${{secrets.HOMELAB_LXC_TOKEN}}
-          BUILD_ID: ${{steps.upload-artifact.outputs.artifact-id}}
