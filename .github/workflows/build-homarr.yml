@@ -28,15 +28,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Distrobuilder and tools
+      - name: Install Distrobuilder and other tools
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y debootstrap squashfs-tools jq wget
+          sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip
           sudo snap install distrobuilder --classic
           mkdir -p /tmp/output/$APP_NAME
           mkdir -p /tmp/cache/$APP_NAME
           wget $(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.assets[] | select(.name|test("amd64.deb")) | .browser_download_url') -O /tmp/hurl_amd64.deb
           sudo apt-get install -y /tmp/hurl_amd64.deb
+          sudo -v ; curl https://rclone.org/install.sh | sudo bash
+
+          cat <<EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
+        env:
+          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
 
       - name: Get application version
         run: |
@@ -54,18 +61,14 @@ jobs:
           echo "ARTIFACT_SIZE=$(du -sh ./$APP_NAME-$APP_VERSION.tar.xz| cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
 
-      - name: Store RootFS file
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: r2 object put lxc-images/${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz -f ./${{env.APP_NAME}}-${{env.APP_VERSION}}.tar.xz
-          postCommands: 
-
-      - name: Store Meta file
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: r2 object put lxc-images/${{env.APP_NAME}}-${{env.APP_VERSION}}-meta.tar.xz -f ./${{env.APP_NAME}}-${{env.APP_VERSION}}-meta.tar.xz
+      - name: Publish Image files
+        run: |
+          rclone copy ./$APP_NAME-$APP_VERSION.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          rclone copy ./$APP_NAME-$APP_VERSION-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          echo
+          echo 'LXC Image published successfully !'
+        env:
+          RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish build info
         run: |
