@@ -46,38 +46,34 @@ jobs:
           sudo apt-get install -y /tmp/hurl_amd64.deb
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
 
-          cat <<EOF > /tmp/rclone.conf
-          $RCLONE_CONFIG
-          EOF
-        env:
-          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
-
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Build Image
         run: |
-          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${CONFIG_PATH} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="v${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
+          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${{inputs.config_path}} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="v${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
           mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz
           mv /tmp/output/${{inputs.app_name}}/meta.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz
           echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz| cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
-        env:
-          CONFIG_PATH: ${{inputs.config_path}}
 
       - name: Publish Image files
-        if: github.event.pull_request.base.ref == 'main' && github.event.pull_request.merged == true
+        if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
+          echo "$RCLONE_CONFIG" > /tmp/rclone.conf
+          echo
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           echo
           echo 'LXC Image published successfully !'
         env:
+          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish build info
-        if: inputs.branch_name == 'main' && inputs.is_merged == true
+        if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
+          hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
           hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
             --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \
             --variable arch=${{inputs.architecture}} --variable dist=${{inputs.distribution}} \
@@ -85,7 +81,7 @@ jobs:
             --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}}\
             .github/publish_build.hurl
           echo
-          echo 'LXC build published successfully !'
+          echo 'LXC build details published successfully !'
         env:
           HOMELAB_LXC_EP: ${{secrets.HOMELAB_LXC_EP}}
           HOMELAB_LXC_TOKEN: ${{secrets.HOMELAB_LXC_TOKEN}}
