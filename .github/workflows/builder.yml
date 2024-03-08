@@ -58,9 +58,9 @@ jobs:
       - name: Build Image
         run: |
           sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${CONFIG_PATH} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="v${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
-          mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz
+          mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz
           mv /tmp/output/${{inputs.app_name}}/meta.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz
-          echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz| cut -f 1)" >> $GITHUB_ENV
+          echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz| cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
         env:
           CONFIG_PATH: ${{inputs.config_path}}
@@ -68,7 +68,7 @@ jobs:
       - name: Publish Image files
         if: github.event.pull_request.base.ref == 'main' && github.event.pull_request.merged == true
         run: |
-          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           echo
           echo 'LXC Image published successfully !'
