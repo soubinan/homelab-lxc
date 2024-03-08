@@ -1,0 +1,91 @@
+name: LXC Image Builder
+
+on:
+  workflow_call:
+    inputs:
+      config_path:
+        required: true
+        type: string
+      app_name:
+        required: true
+        type: string
+      app_version:
+        required: true
+        type: string
+      project_source:
+        required: true
+        type: string
+      distribution:
+        required: true
+        type: string
+      architecture:
+        required: true
+        type: string
+      release:
+        required: true
+        type: string
+      branch_name:
+        required: true
+        type: string
+      is_merged:
+        required: true
+        type: boolean
+
+jobs:
+  image-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Distrobuilder and other tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip
+          sudo snap install distrobuilder --classic
+          mkdir -p /tmp/output/${{inputs.app_name}}
+          mkdir -p /tmp/cache/${{inputs.app_name}}
+          wget $(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.assets[] | select(.name|test("amd64.deb")) | .browser_download_url') -O /tmp/hurl_amd64.deb
+          sudo apt-get install -y /tmp/hurl_amd64.deb
+          sudo -v ; curl https://rclone.org/install.sh | sudo bash
+
+          cat <<EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
+        env:
+          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: |
+          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${CONFIG_PATH} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="v${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
+          mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz
+          mv /tmp/output/${{inputs.app_name}}/meta.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz
+          echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz| cut -f 1)" >> $GITHUB_ENV
+          pwd && ls -lash
+        env:
+          CONFIG_PATH: ${{inputs.config_path}}
+
+      - name: Publish Image files
+        if: github.event.pull_request.base.ref == 'main' && github.event.pull_request.merged == true
+        run: |
+          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          echo
+          echo 'LXC Image published successfully !'
+        env:
+          RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
+
+      - name: Publish build info
+        if: inputs.branch_name == 'main' && inputs.is_merged == true
+        run: |
+          hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
+            --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \
+            --variable arch=${{inputs.architecture}} --variable dist=${{inputs.distribution}} \
+            --variable dist_release=${{inputs.release}} --variable build_id=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz\
+            --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}}\
+            .github/publish_build.hurl
+          echo
+          echo 'LXC build published successfully !'
+        env:
+          HOMELAB_LXC_EP: ${{secrets.HOMELAB_LXC_EP}}
+          HOMELAB_LXC_TOKEN: ${{secrets.HOMELAB_LXC_TOKEN}}

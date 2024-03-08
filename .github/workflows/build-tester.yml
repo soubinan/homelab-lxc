@@ -1,0 +1,25 @@
+name: Test Build
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - '.github/workflows/builder.yml'
+      - '.github/publish_build.hurl'
+      - '.github/workflows/tester.yml'
+
+jobs:
+  image-build:
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/homarr.yml
+      app_name: dummy_app # using the homarr config for tests
+      app_version: '0.15.0'
+      project_source: https://github.com/soubinan/homelab-lxc
+      distribution: debian
+      release: bookworm
+      architecture: amd64
+      branch_name: dev
+      is_merged: false
