@@ -1,7 +1,7 @@
-# -o image.architecture=amd64 -o image.release=bookworm -o image.variant=cloud -o source.url="http://ftp.us.debian.org/debian"
 image:
   distribution: debian
   release: stable
+  variant: default
 
 source:
   downloader: debootstrap
@@ -1057,51 +1057,13 @@ files:
     HOSTNAME="127.0.0.1"
     DEFAULT_COLOR_SCHEME="dark"
 
-- path: /opt/homarr/install.sh
-  generator: dump
-  mode: 0777
-  content: |-
-    #!/bin/bash
-    set -eux
-
-    mkdir /data
-    git clone https://github.com/ajnart/homarr /app
-
-    cd /app
-    yarn install
-    cp /opt/homarr/settings.env .env
-    yarn build
-    cp -r drizzle/migrate/ migrate/
-    cp tsconfig.json migrate/tsconfig.json
-    yarn db:migrate
-    cp -r .next/standalone/* .
-    chmod +x scripts/run.sh
-    touch .installed__
-
-- path: /etc/systemd/system/homarr-install.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=Homarr Installer
-    After=network.target
-    ConditionPathExists=!/app/.installed__
-
-    [Service]
-    Type=oneshot
-    RemainAfterExit=yes
-    ExecStart=/opt/homarr/install.sh
-
-    [Install]
-    WantedBy=multi-user.target
-
 - path: /etc/systemd/system/homarr.service
   generator: dump
   mode: 0440
   content: |-
     [Unit]
     Description=Homarr Dashboard
-    After=network.target homarr-install.service
+    After=network.target
     ConditionPathExists=/app/.installed__
 
     [Service]
@@ -1122,6 +1084,7 @@ packages:
   sets:
   - packages:
     - fuse
+    - locales
     - systemd-resolved
     - openssh-client
     - openssl
@@ -1447,6 +1410,46 @@ actions:
     rm /etc/*-
 
 - trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    mkdir /data
+    git clone https://github.com/ajnart/homarr -b {{ image.serial }} --depth 1 /app
+
+    cd /app
+    yarn install
+    cp /opt/homarr/settings.env .env
+    yarn build
+    rm -rf node_modules
+    NODE_ENV=production
+    yarn install
+    cp -r drizzle/migrate/ migrate/
+    cp tsconfig.json migrate/tsconfig.json
+    touch migrate/yarn.lock
+    yarn db:migrate
+    yarn cache clean
+    cp -r .next/standalone/* .
+    chmod +x scripts/run.sh
+    touch .installed__
+
+- trigger: post-files
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    systemctl enable homarr.service
+
+    apt-get autoremove --purge
+    apt-get clean
+
+    rm -rf /var/cache/apt/archives/*.deb
+    rm -rf /var/log/*
+    rm -rf /tmp/*
+    rm -rf /var/tmp/*
+
+- trigger: post-files
   action: |-
     #!/bin/bash
     set -eux
@@ -1467,14 +1470,6 @@ actions:
     ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf
   releases:
   - bullseye
-
-- trigger: post-files
-  action: |-
-    #!/bin/bash
-    set -eux
-
-    systemctl enable homarr-install.service
-    systemctl enable homarr.service
 
 mappings:
   architecture_map: debian

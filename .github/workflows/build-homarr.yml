@@ -1,0 +1,43 @@
+name: Build Homarr LXC Image
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - '.github/workflows/builder.yml'
+      - '.github/publish_build.hurl'
+      - '.github/workflows/build-homarr.yml'
+      - 'templates/homarr.yml'
+  schedule:
+    - cron: '0 */23 * * *'
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(curl -s https://raw.githubusercontent.com/ajnart/homarr/master/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/homarr.yml
+      app_name: homarr
+      app_version: ${{needs.init.outputs.app_version}}
+      project_source: https://github.com/ajnart/homarr
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged}}
