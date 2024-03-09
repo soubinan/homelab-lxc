@@ -4,7 +4,7 @@ Authorization: Bearer {{token}}
 
 ```graphql
 mutation CreateApplication {
-    createApplication(data: {name: "{{app_name}}", source: "{{source}}"}) {
+    createApplication(data: {name: "{{app_name}}", source: "{{source}}", isForTest: {{is_for_test}}}) {
       id
     }
 }
@@ -40,7 +40,7 @@ Authorization: Bearer {{token}}
 
 ```graphql
 mutation PublishBuild {
-  publishBuild(where: {version: "{{app_name}}-{{app_version}}"}) {
+  publishBuild(where: {buildId: "{{build_id}}"}) {
     id
   }
 }

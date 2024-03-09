@@ -28,5 +28,6 @@ jobs:
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}
-      branch_name: dev
+      branch_name: test
       is_merged: false
+    secrets: inherit
