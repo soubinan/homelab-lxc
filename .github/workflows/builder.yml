@@ -30,6 +30,15 @@ on:
       is_merged:
         required: true
         type: boolean
+    secrets:
+      HOMELAB_LXC_EP:
+        required: true
+      HOMELAB_LXC_TOKEN:
+        required: true
+      RCLONE_CONFIG:
+        required: true
+      RCLONE_CONFIG_PASS:
+        required: true
 
 jobs:
   image-build:
@@ -60,7 +69,9 @@ jobs:
       - name: Publish Image files
         if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
-          echo "$RCLONE_CONFIG" > /tmp/rclone.conf
+          cat << EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
           echo
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
@@ -71,14 +82,13 @@ jobs:
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish build info
-        if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
+        if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
-          hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
-          hurl --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
+          hurl -v --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
             --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \
             --variable arch=${{inputs.architecture}} --variable dist=${{inputs.distribution}} \
             --variable dist_release=${{inputs.release}} --variable build_id=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz\
-            --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}}\
+            --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}} --variable is_for_test=${{inputs.branch_name == 'test'}}\
             .github/publish_build.hurl
           echo
           echo 'LXC build details published successfully !'

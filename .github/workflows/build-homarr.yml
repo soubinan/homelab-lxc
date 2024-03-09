@@ -42,3 +42,4 @@ jobs:
       architecture: ${{matrix.architectures}}
       branch_name: ${{github.event.pull_request.base.ref}}
       is_merged: ${{github.event.pull_request.merged}}
+    secrets: inherit
