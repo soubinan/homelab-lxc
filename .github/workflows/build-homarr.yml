@@ -12,7 +12,7 @@ on:
       - '.github/workflows/build-homarr.yml'
       - 'templates/homarr.yml'
   schedule:
-    - cron: '0 3 */1 * *'
+    - cron: '0 4 */1 * *'
 
 jobs:
   init:
