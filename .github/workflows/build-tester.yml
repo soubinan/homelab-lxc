@@ -30,3 +30,4 @@ jobs:
       architecture: ${{matrix.architectures}}
       branch_name: dev
       is_merged: false
+    secrets: inherit
