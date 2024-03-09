@@ -64,9 +64,9 @@ jobs:
           [cloudflare]
           type = s3
           provider = Cloudflare
-          access_key_id = ${{secrets.R2_ACCESS_KEY_ID}}
-          secret_access_key = ${{secrets.R2_SECRET_ACCESS_KEY}}
-          endpoint = ${{secrets.R2_ENDPOINT}}
+          access_key_id = $R2_ACCESS_KEY_ID
+          secret_access_key = $R2_SECRET_ACCESS_KEY
+          endpoint = $R2_ENDPOINT
           region = auto
           EOF
           echo
@@ -74,6 +74,10 @@ jobs:
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           echo
           echo 'LXC Image published successfully !'
+        env:
+          R2_ACCESS_KEY_ID: ${{secrets.R2_ACCESS_KEY_ID}}
+          R2_SECRET_ACCESS_KEY: ${{secrets.R2_SECRET_ACCESS_KEY}}
+          R2_ENDPOINT: ${{secrets.R2_ENDPOINT}}
 
       - name: Publish build info
         if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
