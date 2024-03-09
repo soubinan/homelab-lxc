@@ -60,7 +60,10 @@ jobs:
       - name: Publish Image files
         if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
-          echo "$RCLONE_CONFIG" > /tmp/rclone.conf
+          cat << EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
+          cat /tmp/rclone.conf
           echo
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
