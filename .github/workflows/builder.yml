@@ -61,17 +61,19 @@ jobs:
         if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           cat << EOF > /tmp/rclone.conf
-          $RCLONE_CONFIG
+          [cloudflare]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${{secrets.R2_ACCESS_KEY_ID}}
+          secret_access_key = ${{secrets.R2_SECRET_ACCESS_KEY}}
+          endpoint = ${{secrets.R2_ENDPOINT}}
+          region = auto
           EOF
-          cat /tmp/rclone.conf
           echo
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           echo
           echo 'LXC Image published successfully !'
-        env:
-          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
-          RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish build info
         if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
