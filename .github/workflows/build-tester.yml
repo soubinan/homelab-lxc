@@ -2,23 +2,31 @@ name: Test Build
 
 on:
   pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
     branches:
       - main
     paths:
-      - '.github/workflows/builder.yml'
       - '.github/publish_build.hurl'
-      - '.github/workflows/tester.yml'
+      - '.github/workflows/builder.yml'
+      - '.github/workflows/build-tester.yml'
 
 jobs:
   image-build:
+    strategy:
+      matrix:
+        architectures:
+          - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/homarr.yml
-      app_name: dummy_app # using the homarr config for tests
-      app_version: '0.15.0'
+      config_path: templates/debian-test.yml
+      app_name: dummy_app
+      app_version: '0.0.0'
       project_source: https://github.com/soubinan/homelab-lxc
       distribution: debian
       release: bookworm
-      architecture: amd64
+      architecture: ${{matrix.architectures}}
       branch_name: dev
       is_merged: false
