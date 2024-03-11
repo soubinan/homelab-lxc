@@ -1,4 +1,4 @@
-name: Build Homarr LXC Image
+name: Build Jellyfin LXC Image
 
 on:
   pull_request:
@@ -9,8 +9,8 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/build-homarr.yml'
-      - 'templates/homarr.yml'
+      - '.github/workflows/build-jellyfin.yml'
+      - 'templates/jellyfin.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -33,10 +33,10 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/homarr.yml
-      app_name: homarr
+      config_path: templates/jellyfin.yml
+      app_name: jellyfin
       app_version: ${{needs.init.outputs.app_version}}
-      project_source: https://github.com/ajnart/homarr
+      project_source: https://github.com/jellyfin/jellyfin
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}
