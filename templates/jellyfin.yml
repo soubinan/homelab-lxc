@@ -1211,7 +1211,6 @@ actions:
     apt-get clean
 
     rm -rf /var/cache/apt/archives/*.deb
-    rm -rf /var/log/*
     rm -rf /tmp/*
     rm -rf /var/tmp/*
 
