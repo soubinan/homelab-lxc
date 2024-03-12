@@ -36,10 +36,11 @@ jobs:
       config_path: templates/jellyfin.yml
       app_name: jellyfin
       app_version: ${{needs.init.outputs.app_version}}
+      categories: Media, Streaming
       project_source: https://github.com/jellyfin/jellyfin
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}
       branch_name: ${{github.event.pull_request.base.ref}}
-      is_merged: ${{github.event.pull_request.merged}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
     secrets: inherit

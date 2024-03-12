@@ -1,0 +1,4 @@
+# ignore vars files
+*.vars
+# ignore tarballs
+*.tar.*
