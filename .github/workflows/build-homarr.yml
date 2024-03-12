@@ -16,7 +16,7 @@ on:
 
 jobs:
   init:
-    if: github.event.pull_request.merged == true || github.event_name == 'opened' || github.event_name == 'reopened' || github.event_name == 'schedule'
+    if: ! (github.event_name == 'closed' && github.event.pull_request.merged == false)
     runs-on: ubuntu-latest
     steps:
       - name: Get Application version
