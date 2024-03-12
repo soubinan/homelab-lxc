@@ -1077,6 +1077,13 @@ files:
     [Install]
     WantedBy=multi-user.target
 
+- path: /var/tmp/50_lxc-app-info.issue
+  generator: dump
+  mode: 0644
+  content: |-
+    Welcome on your custom LXC !\n
+    Homarr is listening on 0.0.0.0:7575 ...\n
+
 packages:
   manager: apt
   update: true

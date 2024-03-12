@@ -1030,6 +1030,14 @@ files:
     [DHCP]
     ClientIdentifier=mac
 
+- path: /var/tmp/50_lxc-app-info.issue
+  generator: dump
+  mode: 0644
+  content: |-
+    Welcome on your custom LXC !\n
+    JupyterLab is listening on 0.0.0.0:8888 ...\n
+    Run `jupyter-lab list` to obtain the active tokens list \n
+
 - name: meta-data
   generator: cloud-init
 
