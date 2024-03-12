@@ -88,7 +88,7 @@ jobs:
         if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           CATEGORIES_STR="${{inputs.categories}}"
-          CATEGORIES_FMT=$(echo "[\"$input\"]" | sed 's/ //g' | sed 's/,/","/g')
+          CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed 's/ //g' | sed 's/,/","/g')
 
           hurl -v --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
             --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \

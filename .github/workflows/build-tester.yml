@@ -15,6 +15,7 @@ on:
 
 jobs:
   image-build:
+    if: github.event.pull_request.merged == true || github.event_name == 'opened' || github.event_name == 'reopened'
     strategy:
       matrix:
         architectures:
