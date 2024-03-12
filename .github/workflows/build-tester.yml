@@ -24,6 +24,7 @@ jobs:
       config_path: templates/debian-test.yml
       app_name: dummy_app
       app_version: '0.0.0'
+      categories: test, dummy
       project_source: https://github.com/soubinan/homelab-lxc
       distribution: debian
       release: bookworm
