@@ -1070,7 +1070,7 @@ files:
     [Install]
     WantedBy=multi-user.target
 
-- path: /var/tmp/50_lxc-app-info.issue
+- path: /etc/issue.d/50_lxc-app-info.issue
   generator: dump
   mode: 0644
   content: |-

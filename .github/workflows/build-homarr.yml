@@ -16,14 +16,13 @@ on:
 
 jobs:
   init:
-    if: github.event_name != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
     runs-on: ubuntu-latest
     steps:
       - name: Get Application version
         id: get-app-version
         run: |
           echo "APP_VERSION=$(curl -s https://api.github.com/repos/ajnart/homarr/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V//')" >> $GITHUB_OUTPUT
-          echo "${{github.event_name}} --- ${{github.event.action}} --- ${{github.event.pull_request.merged}}"
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 
