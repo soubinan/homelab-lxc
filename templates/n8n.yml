@@ -1070,12 +1070,35 @@ files:
     [Install]
     WantedBy=multi-user.target
 
-- path: /etc/issue.d/50_lxc-app-info.issue
+- path: /init.sh
   generator: dump
   mode: 0644
   content: |-
-    Welcome on your custom LXC !\n
-    n8n is listening on 0.0.0.0:5678 ...\n
+    #!/bin/bash
+
+    mkdir -p /etc/issue.d && chmod 0644 -R /etc/issue.d
+
+    cat <<EOF >/etc/issue.d/50_lxc-app-info.issue
+    Welcome on your custom LXC !
+
+    Your app is listening on \4:$(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:)
+    EOF
+
+- path: /etc/systemd/system/issuer.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=Issuer
+    After=network.target
+
+    [Service]
+    Type=simple
+    Restart=always
+    ExecStart=/init.sh
+
+    [Install]
+    WantedBy=multi-user.target
 
 packages:
   manager: apt
