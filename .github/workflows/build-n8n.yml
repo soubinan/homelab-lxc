@@ -1,4 +1,4 @@
-name: Build IT-Tools LXC Image
+name: Build n8n LXC Image
 
 on:
   pull_request:
@@ -9,8 +9,8 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/build-ittools.yml'
-      - 'templates/ittools.yml'
+      - '.github/workflows/build-n8n.yml'
+      - 'templates/n8n.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -22,7 +22,7 @@ jobs:
       - name: Get Application version
         id: get-app-version
         run: |
-          echo "APP_VERSION=$(curl -s https://api.github.com/repos/CorentinTh/it-tools/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V//')" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(curl -s https://api.github.com/repos/n8n-io/n8n/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 
@@ -34,11 +34,11 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/ittools.yml
-      app_name: it-tools
+      config_path: templates/n8n.yml
+      app_name: n8n
       app_version: ${{needs.init.outputs.app_version}}
-      categories: Dev
-      project_source: https://github.com/CorentinTh/it-tools
+      categories: Automation, Workflows
+      project_source: https://github.com/n8n-io/n8n
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}
