@@ -22,4 +22,4 @@ Open an issue to submit the application details and we will try to add it as soo
 It is very straight forward to add a new build template:
 
 - Create a distrobuilder template (check the `templates/` directory to see some examples of already existing builds)
-- create a job to build the LXC image (check the `.github/workflows` to see some examples of already existing builds)
+- create a job to build the LXC image (check the `.github/workflows/` to see some examples of already existing builds)
