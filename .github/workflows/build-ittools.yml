@@ -37,7 +37,8 @@ jobs:
       config_path: templates/ittools.yml
       app_name: it-tools
       app_version: ${{needs.init.outputs.app_version}}
-      categories: Dev
+      description: Useful tools for developers and peoples working in IT.
+      categories: Dev, Collection
       project_source: https://github.com/CorentinTh/it-tools
       distribution: debian
       release: bookworm

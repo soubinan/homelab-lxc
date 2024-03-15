@@ -5,7 +5,7 @@ Authorization: Bearer {{token}}
 ```graphql
 mutation CreateApplication {
   upsertApplication(
-    upsert: {create: {name: "{{app_name}}", source: "{{source}}", categories: {{categories}}, isForTest: {{is_for_test}}}, update: {categories: {{categories}}, isForTest: {{is_for_test}}, name: "{{app_name}}", source: "{{source}}"}}
+    upsert: {create: {name: "{{app_name}}", source: "{{source}}", description: "{{description}}", categories: {{categories}}, isForTest: {{is_for_test}}}, update: {categories: {{categories}}, isForTest: {{is_for_test}}, name: "{{app_name}}", source: "{{source}}"}}
     where: {name: "{{app_name}}"}
   ) {
     id

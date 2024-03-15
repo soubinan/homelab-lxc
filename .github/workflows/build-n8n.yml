@@ -37,6 +37,7 @@ jobs:
       config_path: templates/n8n.yml
       app_name: n8n
       app_version: ${{needs.init.outputs.app_version}}
+      description: n8n is a free and source-available workflow automation tool.
       categories: Automation, Workflows
       project_source: https://github.com/n8n-io/n8n
       distribution: debian

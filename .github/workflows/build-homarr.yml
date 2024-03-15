@@ -37,6 +37,7 @@ jobs:
       config_path: templates/homarr.yml
       app_name: homarr
       app_version: ${{needs.init.outputs.app_version}}
+      description: A simple, yet powerful dashboard for your server.
       categories: Homepage
       project_source: https://github.com/ajnart/homarr
       distribution: debian
