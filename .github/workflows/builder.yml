@@ -12,6 +12,9 @@ on:
       app_version:
         required: true
         type: string
+      description:
+        required: true
+        type: string
       categories:
         required: true
         type: string
@@ -70,7 +73,7 @@ jobs:
           pwd && ls -lash
 
       - name: Publish Image files
-        if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
+        if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -88,14 +91,14 @@ jobs:
         if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           CATEGORIES_STR="${{inputs.categories}}"
-          CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed 's/ //g' | sed 's/,/","/g')
+          CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g'| sed -E 's/ *, */","/g')
 
           hurl -v --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
             --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \
             --variable arch=${{inputs.architecture}} --variable dist=${{inputs.distribution}} \
             --variable dist_release=${{inputs.release}} --variable build_id=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}.tar.xz \
             --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}} --variable is_for_test=${{inputs.branch_name == 'test'}} \
-            --variable categories="$CATEGORIES_FMT" \
+            --variable categories="$CATEGORIES_FMT" --variable description="${{inputs.description}}" \
             .github/publish_build.hurl
           echo
           echo 'LXC build details published successfully !'
