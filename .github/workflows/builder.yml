@@ -73,7 +73,7 @@ jobs:
           pwd && ls -lash
 
       - name: Publish Image files
-        if: github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
+        if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
