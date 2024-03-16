@@ -1,0 +1,50 @@
+name: Auto cleaner
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/auto-cleaner.js'
+      - '.github/workflows/auto-cleaner.yml'
+  schedule:
+    - cron: '0 */12 * * *'
+
+env:
+  NODE_VERSION: 20.x
+
+jobs:
+  image-build:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install required tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq wget curl unzip
+          sudo -v ; curl https://rclone.org/install.sh | sudo bash
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{env.NODE_VERSION}}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{env.NODE_VERSION}}
+
+      - name: Build Image
+        run: |
+          cat << EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
+          echo
+          node ${{github.workspace}}/.github/auto-cleaner.js
+        env:
+          API_TOKEN: ${{secrets.HOMELAB_LXC_TOKEN}}
+          API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
+          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
+          RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
