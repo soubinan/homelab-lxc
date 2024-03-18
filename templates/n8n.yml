@@ -1083,7 +1083,7 @@ files:
 
     Your app is listening on:
     * IP: \4
-    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+//g)
+    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+/,/g)
     EOF
 
     sleep 30

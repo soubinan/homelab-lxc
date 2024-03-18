@@ -1071,7 +1071,7 @@ files:
     ExecStart=/usr/bin/apisix start
     ExecStop=/usr/bin/apisix stop
     ExecReload=/usr/bin/apisix reload
-    LimitNOFILE=65536
+    LimitNOFILE=524288:524288
 
     [Install]
     WantedBy=multi-user.target
@@ -1095,7 +1095,7 @@ files:
     Type=notify
     ExecStart=/usr/bin/etcd $DAEMON_ARGS
     Restart=on-abnormal
-    LimitNOFILE=65536
+    LimitNOFILE=524288:524288
 
     [Install]
     WantedBy=multi-user.target
@@ -1129,7 +1129,7 @@ files:
 
     Your app is listening on:
     * IP: \4
-    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+//g)
+    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+/,/g)
     EOF
 
     sleep 30
