@@ -1059,17 +1059,21 @@ files:
 
 - path: /init.sh
   generator: dump
-  mode: 0644
+  mode: 0755
   content: |-
     #!/bin/bash
 
-    mkdir -p /etc/issue.d && chmod 0644 -R /etc/issue.d
+    mkdir -p /etc/issue.d && chmod 0777 -R /etc/issue.d
 
     cat <<EOF >/etc/issue.d/50_lxc-app-info.issue
     Welcome on your custom LXC !
 
-    Your app is listening on \4:$(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:)
+    Your app is listening on:
+    * IP: \4
+    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+//g)
     EOF
+
+    sleep 30
 
 - path: /etc/systemd/system/issuer.service
   generator: dump
