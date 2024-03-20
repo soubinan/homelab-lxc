@@ -18,7 +18,7 @@ env:
   NODE_VERSION: 20.x
 
 jobs:
-  image-build:
+  clean-builds:
     if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: ${{env.NODE_VERSION}}
 
-      - name: Build Image
+      - name: Cleanup
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -48,3 +48,4 @@ jobs:
           API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
+          MAX_BUILDS: 3

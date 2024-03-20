@@ -1,4 +1,5 @@
 const url = process.env.API_ENDPOINT;
+const max_builds = process.env.MAX_BUILDS;
 const buildsByAppsGQL = {
   query: `
     query BuildsByApps {
@@ -74,7 +75,6 @@ async function deleteBuilds(appName, buildsIds) {
 }
 
 async function cleanupEligibleBuilds() {
-  max_builds = 3
   const buildsByAppsResponse = await fetch(url, buildsByAppsRequest);
   const buildsByAppsJsonData = await gatherResponse(buildsByAppsResponse);
   
