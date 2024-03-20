@@ -1479,6 +1479,7 @@ actions:
     rm -rf /var/cache/apt/archives/*.deb
     rm -rf /tmp/*
     rm -rf /var/tmp/*
+    rm -rf /usr/local/share/.cache/*
 
 - trigger: post-files
   action: |-
