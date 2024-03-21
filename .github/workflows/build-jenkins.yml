@@ -1,0 +1,48 @@
+name: Build Jenkins LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-jenkins.yml'
+      - 'templates/jenkins.yml'
+  schedule:
+    - cron: '0 3 */1 * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(curl -Ls https://updates.jenkins.io/stable/latestCore.txt | sed -E 's/^v|V//')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/jenkins.yml
+      app_name: jenkins
+      app_version: ${{needs.init.outputs.app_version}}
+      description: The leading open source automation server. Build great things at any scale.
+      categories: Automation, CI CD, Dev
+      project_source: https://github.com/jenkinsci/jenkins
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit
