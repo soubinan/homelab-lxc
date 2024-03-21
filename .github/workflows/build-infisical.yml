@@ -1,0 +1,49 @@
+name: Build Infisical LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-infisical.yml'
+      - 'templates/infisical.yml'
+  schedule:
+    - cron: '0 3 */1 * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          DG=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/" | jq -r '.results[] | select(.name |contains("latest-postgres"))|.digest')
+          echo "APP_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/"| jq --arg digest $DG -r '.results[] | select(.digest |contains($digest)) | select(.name |test("^v")) | .name' | sed -E 's/^(v|V)//' | sed -E 's/-postgres//')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/infisical.yml
+      app_name: infisical
+      app_version: ${{needs.init.outputs.app_version}}
+      description: Open Source all-in-one secret management platform to securely manage application configuration and secrets across your team and infrastructure.
+      categories: Secrets management, Security, Infra
+      project_source: https://github.com/Infisical/infisical
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit

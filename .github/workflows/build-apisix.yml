@@ -1,0 +1,48 @@
+name: Build APISIX LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-apisix.yml'
+      - 'templates/apisix.yml'
+  schedule:
+    - cron: '0 3 */1 * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(curl -s https://api.github.com/repos/apache/apisix/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/apisix.yml
+      app_name: apisix
+      app_version: ${{needs.init.outputs.app_version}}
+      description: Full Lifecycle API Management platform to help you manage microservices, delivering the ultimate performance and security.
+      categories: Loadbalancer, API Gateway, Reverse Proxy
+      project_source: https://github.com/apache/apisix
+      distribution: debian
+      release: bullseye
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit
