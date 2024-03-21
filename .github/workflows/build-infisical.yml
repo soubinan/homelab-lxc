@@ -23,7 +23,7 @@ jobs:
         id: get-app-version
         run: |
           DG=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/" | jq -r '.results[] | select(.name |contains("latest-postgres"))|.digest')
-          echo "APP_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/"| jq --arg digest $DG -r '.results[] | select(.digest |contains($digest)) | select(.name |test("^v")) | .name' | sed -E 's/^(v|V)// | sed -E 's/-postgres//')" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/"| jq --arg digest $DG -r '.results[] | select(.digest |contains($digest)) | select(.name |test("^v")) | .name' | sed -E 's/^(v|V)//' | sed -E 's/-postgres//')" >> $GITHUB_OUTPUT
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 

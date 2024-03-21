@@ -1232,7 +1232,7 @@ actions:
     EOF
 
     apt update -y
-    apt install -y jellyfin={{image.serial}}
+    apt install -y jellyfin={{image.serial}}-1
 
     systemctl enable jellyfin.service
 
