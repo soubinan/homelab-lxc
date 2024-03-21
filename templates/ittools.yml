@@ -1218,7 +1218,7 @@ actions:
 
     export NPM_CONFIG_LOGLEVEL=warn
     export CI=true
-    git clone https://github.com/CorentinTh/it-tools -b {{ image.serial }} --depth 1 /tmp/app
+    git clone https://github.com/CorentinTh/it-tools -b v{{ image.serial }} --depth 1 /tmp/app
 
     mkdir /install
     cd /install

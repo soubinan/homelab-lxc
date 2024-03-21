@@ -1450,7 +1450,7 @@ actions:
     set -eux
 
     mkdir /data
-    git clone https://github.com/ajnart/homarr -b {{ image.serial }} --depth 1 /app
+    git clone https://github.com/ajnart/homarr -b v{{ image.serial }} --depth 1 /app
 
     cd /app
     yarn install

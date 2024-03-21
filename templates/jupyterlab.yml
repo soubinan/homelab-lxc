@@ -1176,7 +1176,7 @@ actions:
     cd /
     python3 -m venv jupyterlab
     cd jupyterlab && source bin/activate
-    pip install jupyterlab=={{ image.serial }}
+    pip install jupyterlab==v{{ image.serial }}
 
     touch /jupyterlab/.installed__
 
