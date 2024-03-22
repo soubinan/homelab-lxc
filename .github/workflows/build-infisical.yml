@@ -39,7 +39,7 @@ jobs:
       app_name: infisical
       app_version: ${{needs.init.outputs.app_version}}
       description: Open Source all-in-one secret management platform to securely manage application configuration and secrets across your team and infrastructure.
-      categories: Secrets management, Security, Infra
+      categories: Secrets management, Security
       project_source: https://github.com/Infisical/infisical
       distribution: debian
       release: bookworm
