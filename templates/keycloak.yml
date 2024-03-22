@@ -1086,6 +1086,29 @@ files:
     KEYCLOAK_ADMIN_PASSWORD=
     JAVA_OPTS_APPEND="-Djava.net.preferIPv4Stack=true"
 
+- path: /opt/utils/set-ip.sh
+  generator: dump
+  mode: 0755
+  content: |-
+    sleep 5
+    HOSTN=$(ip addr list eth0 | grep -E "inet .* metric" | cut -d' ' -f6 | cut -d/ -f1 | head -n 1)
+    sed -i "s/^hostname.*/hostname=$HOSTN/" /opt/keycloak/conf/keycloak.conf
+
+- path: /etc/systemd/system/keycloak-init.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=Open Source Identity and Access Management
+    After=network.target
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=/opt/utils/set-ip.sh
+
+    [Install]
+    WantedBy=multi-user.target
 
 - path: /etc/systemd/system/keycloak.service
   generator: dump
@@ -1093,7 +1116,8 @@ files:
   content: |-
     [Unit]
     Description=Open Source Identity and Access Management
-    After=network.target
+    After=network.target keycloak-init.service
+    PathChanged=/opt/keycloak/conf/keycloak.conf
 
     [Service]
     Type=simple
@@ -1257,6 +1281,7 @@ actions:
 
     cd /opt/keycloak/bin && ./kc.sh build
 
+    systemctl enable keycloak-init.service
     systemctl enable keycloak.service
 
 - trigger: post-files
