@@ -1084,6 +1084,7 @@ files:
   content: |-
     KEYCLOAK_ADMIN=
     KEYCLOAK_ADMIN_PASSWORD=
+    JAVA_OPTS_APPEND="-Djava.net.preferIPv4Stack=true"
 
 
 - path: /etc/systemd/system/keycloak.service
