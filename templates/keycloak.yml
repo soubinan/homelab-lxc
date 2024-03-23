@@ -1279,6 +1279,8 @@ actions:
     https-certificate-key-file=/etc/ssl/private/keycloak.key
     EOF
 
+    update-alternatives --config java
+
     cd /opt/keycloak/bin && ./kc.sh build
 
     systemctl enable keycloak-init.service
