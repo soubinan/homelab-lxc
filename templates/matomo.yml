@@ -1097,6 +1097,7 @@ files:
 
     a2enmod ssl
     a2ensite default-ssl
+    a2dissite 000-default.conf
     systemctl reload apache2
 
 
