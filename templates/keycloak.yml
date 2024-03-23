@@ -1124,6 +1124,7 @@ files:
     Restart=always
     # Update /etc/keycloak/creds.env with the admin credentials you want.
     EnvironmentFile=/etc/keycloak/creds.env
+    Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
     ExecStart=/opt/keycloak/bin/kc.sh start
 
     [Install]
@@ -1279,7 +1280,7 @@ actions:
     https-certificate-key-file=/etc/ssl/private/keycloak.key
     EOF
 
-    update-alternatives --config java
+    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
     cd /opt/keycloak/bin && ./kc.sh build
 
