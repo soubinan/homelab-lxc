@@ -12,7 +12,7 @@ on:
       - '.github/auto-cleaner.js'
       - '.github/workflows/auto-cleaner.yml'
   schedule:
-    - cron: '0 */12 * * *'
+    - cron: '0 0 */3 * *'
 
 env:
   NODE_VERSION: 20.x
@@ -48,4 +48,4 @@ jobs:
           API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
-          MAX_BUILDS: 3
+          MAX_BUILDS: 1
