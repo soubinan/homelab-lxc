@@ -12,7 +12,7 @@ on:
       - '.github/auto-cleaner.js'
       - '.github/workflows/auto-cleaner.yml'
   schedule:
-    - cron: '0 */12 * * *'
+    - cron: '0 0 */3 * *'
 
 env:
   NODE_VERSION: 20.x
@@ -37,6 +37,7 @@ jobs:
           node-version: ${{env.NODE_VERSION}}
 
       - name: Cleanup
+        if: github.event.action == 'closed' && github.event.pull_request.merged
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -48,4 +49,19 @@ jobs:
           API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
-          MAX_BUILDS: 3
+          MAX_BUILDS: 1
+
+      - name: Cleanup Test
+        if: github.event.action != 'closed'
+        run: |
+          cat << EOF > /tmp/rclone.conf
+          $RCLONE_CONFIG
+          EOF
+          echo
+          node ${{github.workspace}}/.github/auto-cleaner.js
+        env:
+          API_TOKEN: ${{secrets.HOMELAB_LXC_TOKEN}}
+          API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
+          RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
+          RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
+          MAX_BUILDS: 10

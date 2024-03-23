@@ -1,4 +1,4 @@
-name: Build Infisical LXC Image
+name: Build Matomo LXC Image
 
 on:
   pull_request:
@@ -9,8 +9,8 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/build-infisical.yml'
-      - 'templates/infisical.yml'
+      - '.github/workflows/build-matomo.yml'
+      - 'templates/matomo.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -22,8 +22,7 @@ jobs:
       - name: Get Application version
         id: get-app-version
         run: |
-          DG=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/" | jq -r '.results[] | select(.name |contains("latest-postgres"))|.digest')
-          echo "APP_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/infisical/infisical/tags/"| jq --arg digest $DG -r '.results[] | select(.digest |contains($digest)) | select(.name |test("^v")) | .name' | sed -E 's/^(v|V)//' | sed -E 's/-postgres//')" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(curl -s https://api.github.com/repos/matomo-org/matomo/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 
@@ -35,12 +34,12 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/infisical.yml
-      app_name: infisical
+      config_path: templates/matomo.yml
+      app_name: matomo
       app_version: ${{needs.init.outputs.app_version}}
-      description: Open Source all-in-one secret management platform to securely manage application configuration and secrets across your team and infrastructure.
-      categories: Secrets management, Security
-      project_source: https://github.com/Infisical/infisical
+      description: Google Analytics alternative that protects your data and your customers' privacy.
+      categories: Analytics, SEO, Tracking
+      project_source: https://github.com/matomo-org/matomo
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}
