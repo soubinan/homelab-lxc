@@ -1165,14 +1165,13 @@ files:
     L = Montreal
     O = SoubiLabs
     OU = LXC-Images
-    CN = keycloak.server.soubilabs.xyz
+    CN = localhost
 
     [ req_ext ]
     subjectAltName = @alt_names
 
     [ alt_names ]
-    DNS.1 = keycloak.server.lan
-    DNS.2 = keycloak.lan
+    DNS.1 = keycloak.lan
 
 - path: /opt/certs/crt.config
   generator: dump
@@ -1183,8 +1182,7 @@ files:
     subjectAltName = @alt_names
 
     [alt_names]
-    DNS.1 = keycloak.server.lan
-    DNS.2 = keycloak.lan
+    DNS.1 = keycloak.lan
 
 packages:
   manager: apt
