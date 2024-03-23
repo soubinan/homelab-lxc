@@ -1100,16 +1100,6 @@ files:
     a2dissite 000-default.conf
     systemctl reload apache2
 
-
-- path: /var/matomo/init.sql
-  generator: dump
-  mode: 0644
-  content: |-
-    CREATE DATABASE matomo_db;
-    CREATE USER 'matomo_u'@'localhost';
-    GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, DROP, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES ON matomo_db.* TO 'matomo_u'@'localhost';
-    GRANT FILE ON *.* TO 'matomo_u'@'localhost';
-
 - path: /var/matomo/re.twig
   generator: dump
   mode: 0644
