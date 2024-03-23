@@ -52,8 +52,12 @@ jobs:
     steps:
       - name: Install Distrobuilder and other tools
         run: |
+          wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -
+          echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
           sudo apt-get update -y
           sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip
+          sudo apt-get install -y temurin-11-jdk temurin-17-jdk
+          sudo update-alternatives --config java
           sudo snap install distrobuilder --classic
           mkdir -p /tmp/output/${{inputs.app_name}}
           mkdir -p /tmp/cache/${{inputs.app_name}}
