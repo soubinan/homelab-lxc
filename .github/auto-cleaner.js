@@ -103,21 +103,17 @@ cleanupEligibleBuilds().then((builds) => {
   const { exec } = require('child_process');
   
   builds.forEach((build) => {
-    exec(`rclone delete cloudflare:lxc-images/${build}-root.tar.xz`, (error, stdout, stderr) => {
+    exec(`rclone delete cloudflare:lxc-images/${build}-root.tar.xz --config /tmp/rclone.conf`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return;
       }
-      if (stdout) {console.debug(`stdout: ${stdout}`);}
-      if (stderr) {console.error(`stderr: ${stderr}`);}
     });
-    exec(`rclone delete cloudflare:lxc-images/${build}-meta.tar.xz`, (error, stdout, stderr) => {
+    exec(`rclone delete cloudflare:lxc-images/${build}-meta.tar.xz --config /tmp/rclone.conf`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return;
       }
-      if (stdout) {console.debug(`stdout: ${stdout}`);}
-      if (stderr) {console.error(`stderr: ${stderr}`);}
     });
   });
 });
