@@ -1042,61 +1042,33 @@ files:
 - name: vendor-data
   generator: cloud-init
 
-- path: /opt/certs/rootCA.config
+- path: /opt/n8n/.env
   generator: dump
+  mode: 0440
   content: |-
-    [ req ]
-    default_md = sha256
-    prompt = no
-    req_extensions = req_ext
-    distinguished_name = req_distinguished_name
+    PORT=5678
+    NODE_ENV="production"
+    NODE_OPTIONS="--no-experimental-fetch"
+    N8N_RELEASE_TYPE=stable
 
-    [ req_distinguished_name ]
-    countryName = CA
-    stateOrProvinceName = Quebec
-    localityName = Montreal
-    organizationName = SoubiLabs
-
-    [ req_ext ]
-    keyUsage=critical,digitalSignature,keyEncipherment
-    extendedKeyUsage=critical,serverAuth,clientAuth
-
-- path: /opt/ssl.conf
+- path: /etc/systemd/system/n8n.service
   generator: dump
+  mode: 0440
   content: |-
-    <VirtualHost *:443>
-            ServerAdmin webmaster@localhost
+    [Unit]
+    Description=n8n - Workflow automation tool
+    After=network.target
+    ConditionPathExists=/opt/n8n/.installed__
 
-            DocumentRoot /var/www/html
+    [Service]
+    Type=simple
+    EnvironmentFile=/opt/n8n/.env
+    PIDFile=/opt/n8n/n8n.pid
+    ExecStart=/usr/bin/n8n start
+    Restart=always
 
-            ErrorLog ${APACHE_LOG_DIR}/error.log
-            CustomLog ${APACHE_LOG_DIR}/access.log combined
-            SSLEngine on
-
-            SSLCertificateFile      /etc/ssl/certs/rootCA.crt
-            SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
-
-            <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
-                    SSLOptions +StdEnvVars
-            </FilesMatch>
-
-            <Directory /usr/lib/cgi-bin>
-                    SSLOptions +StdEnvVars
-            </Directory>
-            <Directory "/var/www">
-                    Options MultiViews FollowSymlinks
-                    Order allow,deny
-                    Allow from all
-                    AllowOverride All
-            </Directory>
-            <Directory "/var/www/data">
-                    Deny from all
-            </Directory>
-
-            <IfModule mod_headers.c>
-                    Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
-            </IfModule>
-    </VirtualHost>
+    [Install]
+    WantedBy=multi-user.target
 
 - path: /init.sh
   generator: dump
@@ -1107,50 +1079,14 @@ files:
     mkdir -p /etc/issue.d && chmod 0777 -R /etc/issue.d
 
     cat <<EOF >/etc/issue.d/50_lxc-app-info.issue
-
-     ░▒▓███████▓▒░ ░▒▓██████▓▒░ ░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░ ░▒▓█▓▒░░▒▓█▓▒░        ░▒▓██████▓▒░ ░▒▓███████▓▒░  ░▒▓███████▓▒░ 
-    ░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░        
-    ░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░        
-     ░▒▓██████▓▒░ ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░ ░▒▓█▓▒░░▒▓█▓▒░       ░▒▓████████▓▒░░▒▓███████▓▒░  ░▒▓██████▓▒░  
-           ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░ 
-           ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░ 
-    ░▒▓███████▓▒░  ░▒▓██████▓▒░  ░▒▓██████▓▒░ ░▒▓███████▓▒░ ░▒▓█▓▒░░▒▓████████▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░ ░▒▓███████▓▒░  
-
     Welcome on your custom LXC !
 
     Your app is listening on:
     * IP: \4
-    * Ports: $(ss -plantu|grep -viE "system|local|127.0.0.1:|127.0.0.1%|next-router-wor"|awk '{print $5}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+/,/g)
+    * Ports: $(ss -plt|grep -viE "system|local"|awk '{print $4}'|cut -f2 -d:|tr '\n' ','|sed -E s/,,+/,/g)
     EOF
 
-- path: /etc/systemd/system/issuer.timer
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=Run perf optimization for NextCloud periodically
-
-    [Timer]
-    Unit=issuer.service
-    OnActiveSec=5s
-
-    [Install]
-    WantedBy=multi-user.target
-
-- path: /etc/systemd/system/issuer.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=Issuer
-    After=network.target
-
-    [Service]
-    Type=oneshot
-    ExecStart=/init.sh
-
-    [Install]
-    WantedBy=multi-user.target
+    sleep 30
 
 - path: /etc/systemd/system/issuer.service
   generator: dump
@@ -1164,59 +1100,6 @@ files:
     Type=simple
     Restart=always
     ExecStart=/init.sh
-
-    [Install]
-    WantedBy=multi-user.target
-
-- path: /etc/systemd/system/nextcloud-init.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=DB init for NextCloud
-    After=network.target mariadb.service apache2.service
-    ConditionPathExists=!/var/nextcloud/.initialized__
-
-    [Service]
-    Type=oneshot
-    RemainAfterExit=yes
-    ExecStart=/var/nextcloud/init.sh
-
-    [Install]
-    WantedBy=multi-user.target
-
-- path: /etc/systemd/system/nextcloud-optimize.timer
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=Run perf optimization for NextCloud periodically
-
-    [Timer]
-    Unit=nextcloud-optimize.service
-    OnCalendar=*-*-* *:*:00,30
-
-    [Install]
-    WantedBy=multi-user.target
-
-- path: /etc/systemd/system/nextcloud-optimize.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=Perf optimization for NextCloud
-    After=network.target mariadb.service apache2.service
-    ConditionPathExists=/var/www/html/config/config.php
-    ConditionPathExists=!/var/nextcloud/.optimized__
-
-    [Service]
-    Type=oneshot
-    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.locking' => '\\\\OC\\\\Memcache\\\\Redis'," /var/www/html/config/config.php
-    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.local' => '\\\\OC\\\\Memcache\\\\APCu'," /var/www/html/config/config.php
-    ExecStart=/bin/bash -c "grep '\\\\OC\\\\Memcache\\\\APCu' /var/www/html/config/config.php; if [ "$?" -eq 0 ]; then touch /var/nextcloud/.optimized__; fi"
-    ExecStart=/usr/bin/chmod 660 /var/www/html/config/config.php
-    ExecStart=/usr/bin/chown root:www-data /var/www/html/config/config.php
-    ExecStart=/usr/bin/touch /var/nextcloud/.optimized__
 
     [Install]
     WantedBy=multi-user.target
@@ -1237,25 +1120,7 @@ packages:
     - wget
     - gpg
     - vim
-    - unzip
-    - mariadb-server
-    - redis
-    - php
-    - php-common
-    - php-cli
-    - php-mysql
-    - php-redis
-    - php-imagick
-    - php-curl
-    - php-zip
-    - php-xml
-    - php-apcu
-    - php-gd
-    - php-gmp
-    - php-intl
-    - php-mbstring
-    - php-bcmath
-    - libapache2-mod-php
+    - nodejs
     action: install
 
   repositories:
@@ -1264,6 +1129,40 @@ packages:
       deb http://deb.debian.org/debian {{ image.release }} main
       deb http://deb.debian.org/debian {{ image.release }}-updates main
       deb http://deb.debian.org/debian-security/ {{ image.release }}-security main
+
+  - name: nodejs
+    url: |-
+      deb http://deb.nodesource.com/node_20.x nodistro main
+    key: |-
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      mQENBFdDN1ABCADaNd/I3j3tn40deQNgz7hB2NvT+syXe6k4ZmdiEcOfBvFrkS8B
+      hNS67t93etHsxEy7E0qwsZH32bKazMqe9zDwoa3aVImryjh6SHC9lMtW27JPHFeM
+      Srkt9YmH1WMwWcRO6eSY9B3PpazquhnvbammLuUojXRIxkDroy6Fw4UKmUNSRr32
+      9Ej87jRoR1B2/57Kfp2Y4+vFGGzSvh3AFQpBHq51qsNHALU6+8PjLfIt+5TPvaWR
+      TB+kAZnQZkaIQM2nr1n3oj6ak2RATY/+kjLizgFWzgEfbCrbsyq68UoY5FPBnu4Z
+      E3iDZpaIqwKr0seUC7iA1xM5eHi5kty1oB7HABEBAAG0Ik5Tb2xpZCA8bnNvbGlk
+      LWdwZ0Bub2Rlc291cmNlLmNvbT6JATgEEwECACIFAldDN1ACGwMGCwkIBwMCBhUI
+      AgkKCwQWAgMBAh4BAheAAAoJEC9ZtfmbG+C0y7wH/i4xnab36dtrYW7RZwL8i6Sc
+      NjMx4j9+U1kr/F6YtqWd+JwCbBdar5zRghxPcYEq/qf7MbgAYcs1eSOuTOb7n7+o
+      xUwdH2iCtHhKh3Jr2mRw1ks7BbFZPB5KmkxHaEBfLT4d+I91ZuUdPXJ+0SXs9gzk
+      Dbz65Uhoz3W03aiF8HeL5JNARZFMbHHNVL05U1sTGTCOtu+1c/33f3TulQ/XZ3Y4
+      hwGCpLe0Tv7g7Lp3iLMZMWYPEa0a7S4u8he5IEJQLd8bE8jltcQvrdr3Fm8kI2Jg
+      BJmUmX4PSfhuTCFaR/yeCt3UoW883bs9LfbTzIx9DJGpRIu8Y0IL3b4sj/GoZVq5
+      AQ0EV0M3UAEIAKrTaC62ayzqOIPa7nS90BHHck4Z33a2tZF/uof38xNOiyWGhT8u
+      JeFoTTHn5SQq5Ftyu4K3K2fbbpuu/APQF05AaljzVkDGNMW4pSkgOasdysj831cu
+      ssrHX2RYS22wg80k6C/Hwmh5F45faEuNxsV+bPx7oPUrt5n6GMx84vEP3i1+FDBi
+      0pt/B/QnDFBXki1BGvJ35f5NwDefK8VaInxXP3ZN/WIbtn5dqxppkV/YkO7GiJlp
+      Jlju9rf3kKUIQzKQWxFsbCAPIHoWv7rH9RSxgDithXtG6Yg5R1aeBbJaPNXL9wpJ
+      YBJbiMjkAFaz4B95FOqZm3r7oHugiCGsHX0AEQEAAYkBHwQYAQIACQUCV0M3UAIb
+      DAAKCRAvWbX5mxvgtE/OB/0VN88DR3Y3fuqy7lq/dthkn7Dqm9YXdorZl3L152eE
+      IF882aG8FE3qZdaLGjQO4oShAyNWmRfSGuoH0XERXAI9n0r8m4mDMxE6rtP7tHet
+      y/5M8x3CTyuMgx5GLDaEUvBusnTD+/v/fBMwRK/cZ9du5PSG4R50rtst+oYyC2ao
+      x4I2SgjtF/cY7bECsZDplzatN3gv34PkcdIg8SLHAVlL4N5tzumDeizRspcSyoy2
+      K2+hwKU4C4+dekLLTg8rjnRROvplV2KtaEk6rxKtIRFDCoQng8wfJuIMrDNKvqZw
+      FRGt7cbvW5MCnuH8MhItOl9Uxp1wHp6gtav/h8Gp6MBa
+      =MARt
+      -----END PGP PUBLIC KEY BLOCK-----
 
 actions:
 - trigger: post-unpack
@@ -1316,41 +1215,14 @@ actions:
     #!/bin/bash
     set -eux
 
-    openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+    PORT=5678
+    NODE_ENV=production
+    N8N_RELEASE_TYPE=stable
 
-    wget -O /tmp/nextcloud.zip https://download.nextcloud.com/server/releases/nextcloud-{{image.serial}}.zip
-    unzip /tmp/nextcloud.zip -d /tmp
-    rm -rf /var/www/html
-    cp -r /tmp/nextcloud /var/www/html
-    mkdir -p /var/www/html/data
-    chown www-data: -R /var/www/
+    npm install -g n8n@{{ image.serial }}
+    touch /opt/n8n/.installed__
 
-    cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
-
-    PHP_VERSION=$(php -v|grep cli|awk '{print $2}'|cut -d . -f1-2)
-    
-
-    sed -iE "s|^output_buffering.*|output_buffering = Off|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^memory_limit.*|memory_limit = 512M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^upload_max_filesize.*|upload_max_filesize = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^max_file_uploads.*|max_file_uploads = 100|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^max_execution_time.*|max_execution_time = 360|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^post_max_size.*|post_max_size = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;date.timezone.*|date.timezone = UTC|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.enable.*|opcache.enable = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.interned_strings_buffer.*|opcache.interned_strings_buffer = 16|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.max_accelerated_files.*|opcache.max_accelerated_files = 10000|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.memory_consumption.*|opcache.memory_consumption = 128|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.save_comments.*|opcache.save_comments = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.revalidate_freq.*|opcache.revalidate_freq = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|'dbname' => '',|'dbname' => 'nextcloud_db',|" /var/www/html/core/Controller/SetupController.php
-    sed -iE "s|'dbuser' => '',|'dbuser' => 'nextcloud_u',|" /var/www/html/core/Controller/SetupController.php
-
-    systemctl enable mariadb
-    systemctl enable redis-server
-    systemctl enable apache2
-    systemctl enable nextcloud-init
-    systemctl enable nextcloud-optimize.timer
+    systemctl enable n8n.service
 
 - trigger: post-files
   action: |-
