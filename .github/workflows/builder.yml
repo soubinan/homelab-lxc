@@ -99,8 +99,8 @@ jobs:
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
-      - name: Publish build info
-        if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
+      - name: Publish Image metadata
+        if: steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && (inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true))
         run: |
           CATEGORIES_STR="${{inputs.categories}}"
           CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g'| sed -E 's/ *, */","/g')
