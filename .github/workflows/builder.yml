@@ -60,8 +60,11 @@ jobs:
         env:
           HOMELAB_LXC_EP: ${{secrets.HOMELAB_LXC_EP}}
 
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Install Distrobuilder and other tools
+      - name: Install required tools
+        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
         run: |
           sudo apt-get update -y
           sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip
@@ -71,9 +74,6 @@ jobs:
           wget $(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.assets[] | select(.name|test("amd64.deb")) | .browser_download_url') -O /tmp/hurl_amd64.deb
           sudo apt-get install -y /tmp/hurl_amd64.deb
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
-
-      - name: Check out repository
-        uses: actions/checkout@v4
 
       - name: Build Image
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
