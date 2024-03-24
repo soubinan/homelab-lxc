@@ -76,7 +76,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Image
-        if: steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID
+        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
         run: |
           sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${{inputs.config_path}} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
           mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz
@@ -85,7 +85,7 @@ jobs:
           pwd && ls -lash
 
       - name: Publish Image files
-        if: steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && (inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true))
+        if: inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -99,8 +99,8 @@ jobs:
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
-      - name: Publish build info
-        if: inputs.branch_name == 'test' || github.event_name == 'schedule' || (inputs.branch_name == 'main' && inputs.is_merged == true)
+      - name: Publish Image metadata
+        if: inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)
         run: |
           CATEGORIES_STR="${{inputs.categories}}"
           CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g'| sed -E 's/ *, */","/g')

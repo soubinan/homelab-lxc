@@ -1042,6 +1042,80 @@ files:
 - name: vendor-data
   generator: cloud-init
 
+- path: /opt/certs/rootCA.config
+  generator: dump
+  content: |-
+    [ req ]
+    default_md = sha256
+    prompt = no
+    req_extensions = req_ext
+    distinguished_name = req_distinguished_name
+
+    [ req_distinguished_name ]
+    countryName = CA
+    stateOrProvinceName = Quebec
+    localityName = Montreal
+    organizationName = SoubiLabs
+
+    [ req_ext ]
+    keyUsage=critical,digitalSignature,keyEncipherment
+    extendedKeyUsage=critical,serverAuth,clientAuth
+
+- path: /opt/ssl.conf
+  generator: dump
+  content: |-
+    <VirtualHost *:443>
+            ServerAdmin webmaster@localhost
+
+            DocumentRoot /var/www/html
+
+            ErrorLog ${APACHE_LOG_DIR}/error.log
+            CustomLog ${APACHE_LOG_DIR}/access.log combined
+            SSLEngine on
+
+            SSLCertificateFile      /etc/ssl/certs/rootCA.crt
+            SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
+
+            <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
+                    SSLOptions +StdEnvVars
+            </FilesMatch>
+
+            <Directory /usr/lib/cgi-bin>
+                    SSLOptions +StdEnvVars
+            </Directory>
+            <Directory "/var/www">
+                    Options MultiViews FollowSymlinks
+                    Order allow,deny
+                    Allow from all
+                    AllowOverride All
+            </Directory>
+            <Directory "/var/www/data">
+                    Deny from all
+            </Directory>
+
+            <IfModule mod_headers.c>
+                    Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
+            </IfModule>
+    </VirtualHost>
+
+- path: /var/nextcloud/init.sh
+  generator: dump
+  mode: 0755
+  content: |-
+    #!/bin/bash
+
+    mysql -e "CREATE DATABASE nextcloud_db;"
+    mysql -e "CREATE USER 'nextcloud_u'@'localhost';"
+    mysql -e "GRANT ALL PRIVILEGES ON nextcloud_db.* TO 'nextcloud_u'@'localhost';"
+    mysql -e "FLUSH PRIVILEGES;"
+
+    phpenmod bcmath gmp imagick intl
+
+    a2enmod dir env headers mime rewrite ssl
+    a2ensite default-ssl
+    a2dissite 000-default.conf
+    systemctl reload apache2
+
 - path: /init.sh
   generator: dump
   mode: 0755
@@ -1052,8 +1126,6 @@ files:
 
     cat <<EOF >/etc/issue.d/50_lxc-app-info.issue
     Welcome on your custom LXC !
-
-    * Keycloak: Update /etc/keycloak/creds.env with the admin credentials you want and restart keycloak.service *
 
     Your app is listening on:
     * IP: \4
@@ -1078,111 +1150,58 @@ files:
     [Install]
     WantedBy=multi-user.target
 
-- path: /etc/keycloak/creds.env
-  generator: dump
-  mode: 0440
-  content: |-
-    KEYCLOAK_ADMIN=
-    KEYCLOAK_ADMIN_PASSWORD=
-    JAVA_OPTS_APPEND="-Djava.net.preferIPv4Stack=true"
-
-- path: /opt/utils/set-ip.sh
-  generator: dump
-  mode: 0755
-  content: |-
-    sleep 5
-    HOSTN=$(ip addr list eth0 | grep -E "inet .* metric" | cut -d' ' -f6 | cut -d/ -f1 | head -n 1)
-    sed -i "s/^hostname.*/hostname=$HOSTN/" /opt/keycloak/conf/keycloak.conf
-
-- path: /etc/systemd/system/keycloak-init.service
+- path: /etc/systemd/system/nextcloud-init.service
   generator: dump
   mode: 0440
   content: |-
     [Unit]
-    Description=Open Source Identity and Access Management
-    After=network.target
+    Description=DB init for NextCloud
+    After=network.target mariadb.service apache2.service
+    ConditionPathExists=!/var/nextcloud/.initialized__
 
     [Service]
     Type=oneshot
     RemainAfterExit=yes
-    ExecStart=/opt/utils/set-ip.sh
+    ExecStart=/var/nextcloud/init.sh
 
     [Install]
     WantedBy=multi-user.target
 
-- path: /etc/systemd/system/keycloak.service
+- path: /etc/systemd/system/nextcloud-optimize.timer
   generator: dump
   mode: 0440
   content: |-
     [Unit]
-    Description=Open Source Identity and Access Management
-    After=network.target keycloak-init.service
-    PathChanged=/opt/keycloak/conf/keycloak.conf
+    Description=Run perf optimization for NextCloud periodically
 
-    [Service]
-    Type=simple
-    Restart=always
-    # Update /etc/keycloak/creds.env with the admin credentials you want.
-    EnvironmentFile=/etc/keycloak/creds.env
-    Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-    ExecStart=/opt/keycloak/bin/kc.sh start
+    [Timer]
+    Unit=nextcloud-optimize.service
+    OnCalendar=*-*-* *:*:00,30
 
     [Install]
     WantedBy=multi-user.target
 
-- path: /opt/certs/rootCA.config
+- path: /etc/systemd/system/nextcloud-optimize.service
   generator: dump
+  mode: 0440
   content: |-
-    [ req ]
-    default_md = sha256
-    prompt = no
-    req_extensions = req_ext
-    distinguished_name = req_distinguished_name
+    [Unit]
+    Description=Perf optimization for NextCloud
+    After=network.target mariadb.service apache2.service
+    ConditionPathExists=/var/www/html/config/config.php
+    ConditionPathExists=!/var/nextcloud/.optimized__
 
-    [ req_distinguished_name ]
-    countryName = CA
-    stateOrProvinceName = Quebec
-    localityName = Montreal
-    organizationName = SoubiLabs
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.locking' => '\\\\OC\\\\Memcache\\\\Redis'," /var/www/html/config/config.php
+    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.local' => '\\\\OC\\\\Memcache\\\\APCu'," /var/www/html/config/config.php
+    ExecStart=/bin/bash -c "grep '\\\\OC\\\\Memcache\\\\APCu' /var/www/html/config/config.php; if [ "$?" -eq 0 ]; then touch /var/nextcloud/.optimized__; fi"
+    ExecStart=/usr/bin/chmod 660 /var/www/html/config/config.php
+    ExecStart=/usr/bin/chown root:www-data /var/www/html/config/config.php
+    ExecStart=/usr/bin/touch /var/nextcloud/.optimized__
 
-    [ req_ext ]
-    keyUsage=critical,digitalSignature,keyEncipherment
-    extendedKeyUsage=critical,serverAuth,clientAuth
-
-- path: /opt/certs/csr.config
-  generator: dump
-  content: |-
-    [ req ]
-    default_bits = 2048
-    prompt = no
-    default_md = sha256
-    req_extensions = req_ext
-    distinguished_name = dn
-
-    [ dn ]
-    C = CA
-    ST = Quebec
-    L = Montreal
-    O = SoubiLabs
-    OU = LXC-Images
-    CN = localhost
-
-    [ req_ext ]
-    subjectAltName = @alt_names
-
-    [ alt_names ]
-    DNS.1 = keycloak.lan
-
-- path: /opt/certs/crt.config
-  generator: dump
-  content: |-
-    authorityKeyIdentifier = keyid,issuer
-    basicConstraints = CA:FALSE
-    keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-    subjectAltName = @alt_names
-
-    [alt_names]
-    DNS.1 = keycloak.lan
+    [Install]
+    WantedBy=multi-user.target
 
 packages:
   manager: apt
@@ -1200,8 +1219,25 @@ packages:
     - wget
     - gpg
     - vim
-    - openjdk-17-jre
-    - fontconfig
+    - unzip
+    - mariadb-server
+    - redis
+    - php
+    - php-common
+    - php-cli
+    - php-mysql
+    - php-redis
+    - php-imagick
+    - php-curl
+    - php-zip
+    - php-xml
+    - php-apcu
+    - php-gd
+    - php-gmp
+    - php-intl
+    - php-mbstring
+    - php-bcmath
+    - libapache2-mod-php
     action: install
 
   repositories:
@@ -1262,28 +1298,41 @@ actions:
     #!/bin/bash
     set -eux
 
-    mkdir -p /opt/keycloak
+    openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
 
-    openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-    openssl genrsa -out /etc/ssl/private/keycloak.key 2048
-    openssl req -new -key /etc/ssl/private/keycloak.key -out /etc/ssl/private/keycloak.csr -config /opt/certs/csr.config
-    openssl x509 -req -in /etc/ssl/private/keycloak.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/keycloak.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+    wget -O /tmp/nextcloud.zip https://download.nextcloud.com/server/releases/nextcloud-{{image.serial}}.zip
+    unzip /tmp/nextcloud.zip -d /tmp
+    rm -rf /var/www/html
+    cp -r /tmp/nextcloud /var/www/html
+    mkdir -p /var/www/html/data
+    chown www-data: -R /var/www/
 
-    wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz
-    tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/
+    cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
 
-    cat <<EOF > /opt/keycloak/conf/keycloak.conf
-    hostname=0.0.0.0
-    https-certificate-file=/etc/ssl/private/keycloak.crt
-    https-certificate-key-file=/etc/ssl/private/keycloak.key
-    EOF
+    PHP_VERSION=$(php -v|grep cli|awk '{print $2}'|cut -d . -f1-2)
+    
 
-    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    sed -iE "s|^output_buffering.*|output_buffering = Off|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^memory_limit.*|memory_limit = 512M|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^upload_max_filesize.*|upload_max_filesize = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^max_file_uploads.*|max_file_uploads = 100|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^max_execution_time.*|max_execution_time = 360|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^post_max_size.*|post_max_size = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;date.timezone.*|date.timezone = UTC|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.enable.*|opcache.enable = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.interned_strings_buffer.*|opcache.interned_strings_buffer = 16|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.max_accelerated_files.*|opcache.max_accelerated_files = 10000|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.memory_consumption.*|opcache.memory_consumption = 128|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.save_comments.*|opcache.save_comments = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|^;opcache.revalidate_freq.*|opcache.revalidate_freq = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+    sed -iE "s|'dbname' => '',|'dbname' => 'nextcloud_db',|" /var/www/html/core/Controller/SetupController.php
+    sed -iE "s|'dbuser' => '',|'dbuser' => 'nextcloud_u',|" /var/www/html/core/Controller/SetupController.php
 
-    cd /opt/keycloak/bin && ./kc.sh build
-
-    systemctl enable keycloak-init.service
-    systemctl enable keycloak.service
+    systemctl enable mariadb
+    systemctl enable redis-server
+    systemctl enable apache2
+    systemctl enable nextcloud-init
+    systemctl enable nextcloud-optimize.timer
 
 - trigger: post-files
   action: |-
