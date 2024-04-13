@@ -49,7 +49,7 @@ jobs:
           API_ENDPOINT: ${{secrets.HOMELAB_LXC_EP}}
           RCLONE_CONFIG: ${{secrets.RCLONE_CONFIG}}
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
-          MAX_BUILDS: 2
+          MAX_BUILDS: 1
 
       - name: Cleanup Test
         if: github.event.action == 'opened' || github.event.action == 'reopened' || (github.event.action == 'closed' && github.event.pull_request.merged)
