@@ -1140,7 +1140,7 @@ packages:
     - fuse
     - locales
     - systemd-resolved
-    - openssh-client
+    - openssh-server
     - openssl
     - cloud-init
     - curl

@@ -1178,7 +1178,7 @@ packages:
   - packages:
     - fuse
     - locales
-    - openssh-client
+    - openssh-server
     - openssl
     - cloud-init
     - curl
