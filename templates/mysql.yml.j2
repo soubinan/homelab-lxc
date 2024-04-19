@@ -1,0 +1,19 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    {% raw %}apt install mariadb-server={{image.serial}} -y{% endraw %}
+    systemctl enable mariadb
+{% endblock post_files %}
+{# *** End of configuration block *** #}
