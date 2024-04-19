@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-ittools.yml'
-      - 'templates/ittools.yml'
+      - 'templates/ittools.yml.j2'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -34,7 +34,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/ittools.yml
+      config_path: templates/ittools.yml.j2
       app_name: it-tools
       app_version: ${{needs.init.outputs.app_version}}
       app_ports: 80
