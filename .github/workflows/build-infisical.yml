@@ -38,6 +38,7 @@ jobs:
       config_path: templates/infisical.yml
       app_name: infisical
       app_version: ${{needs.init.outputs.app_version}}
+      app_ports: 8080
       description: Open Source all-in-one secret management platform to securely manage application configuration and secrets across your team and infrastructure.
       categories: Secrets management, Security
       project_source: https://github.com/Infisical/infisical

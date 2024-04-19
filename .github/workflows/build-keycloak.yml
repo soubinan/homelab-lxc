@@ -37,6 +37,7 @@ jobs:
       config_path: templates/keycloak.yml
       app_name: keycloak
       app_version: ${{needs.init.outputs.app_version}}
+      app_ports: 8080
       description: Open Source Identity and Access Management.
       categories: Identity, IAM, IDP, Security
       project_source: https://github.com/keycloak/keycloak

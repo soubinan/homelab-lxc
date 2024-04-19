@@ -1,0 +1,362 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}
+- path: /opt/infisical/settings.env
+  generator: dump
+  mode: 0440
+  content: |-
+    PORT=8080
+    HOST=0.0.0.0
+    HTTPS_ENABLED=false 
+    STANDALONE_BUILD=true 
+    STANDALONE_MODE=true
+    TELEMETRY_ENABLED=true
+    NODE_ENV=production
+    NEXT_PUBLIC_ENV=production
+    NEXT_TELEMETRY_DISABLED=1
+    POSTGRES_USER=infuser
+    POSTGRES_DB=infisical
+
+- path: /etc/systemd/system/infisical-initdb.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=DB initializer for Infisical in postgresql
+    After=network.target postgresql.service
+    Wants=postgresql.service
+    ConditionPathExists=/backend/.installed__
+    ConditionPathExists=!/var/lib/postgresql/.db_initialized__
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    WorkingDirectory=/
+    User=postgres
+    EnvironmentFile=/opt/infisical/settings.env
+    ExecStart=/usr/bin/createdb ${POSTGRES_DB}
+    ExecStart=/usr/bin/createuser -s ${POSTGRES_USER}
+    ExecStart=/usr/bin/psql -c "GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_USER};"
+    ExecStart=/usr/bin/touch /var/lib/postgresql/.db_initialized__
+
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /etc/systemd/system/infisical-migrator.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=DB migrator for Infisical
+    After=network.target infisical-initdb.service
+    Wants=infisical-initdb.service
+    ConditionPathExists=/var/lib/postgresql/.db_initialized__
+    ConditionPathExists=!/backend/.migrated__
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    WorkingDirectory=/backend
+    EnvironmentFile=/opt/infisical/settings.env
+    Environment=DB_CONNECTION_URI=postgres://postgres@127.0.0.1:5432/infisical
+    ExecStart=/usr/bin/npm run migration:latest
+    ExecStart=/usr/bin/touch /backend/.migrated__
+
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /etc/systemd/system/infisical.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=Open Source Secret Management
+    After=network.target infisical-migrator.service
+    ConditionPathExists=/backend/.migrated__
+
+    [Service]
+    Type=simple
+    WorkingDirectory=/backend
+    EnvironmentFile=/opt/infisical/settings.env
+    Environment=DB_CONNECTION_URI=postgres://infuser@127.0.0.1:5432/infisical
+    Environment=REDIS_URL=redis://127.0.0.1:6379
+    Environment=SITE_URL=http://0.0.0.0:8080
+    PIDFile=/opt/infisical/infisical.pid
+    ExecStart=/backend/standalone-entrypoint.sh
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}
+  - packages:
+    - software-properties-common
+    - apt-transport-https
+    - git
+    - nodejs
+    action: install
+
+  - packages:
+    - redis
+    - redis-server
+    - postgresql-16
+    action: install
+{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}
+  - name: nodejs
+    url: |-
+      deb http://deb.nodesource.com/node_20.x nodistro main
+    key: |-
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      mQENBFdDN1ABCADaNd/I3j3tn40deQNgz7hB2NvT+syXe6k4ZmdiEcOfBvFrkS8B
+      hNS67t93etHsxEy7E0qwsZH32bKazMqe9zDwoa3aVImryjh6SHC9lMtW27JPHFeM
+      Srkt9YmH1WMwWcRO6eSY9B3PpazquhnvbammLuUojXRIxkDroy6Fw4UKmUNSRr32
+      9Ej87jRoR1B2/57Kfp2Y4+vFGGzSvh3AFQpBHq51qsNHALU6+8PjLfIt+5TPvaWR
+      TB+kAZnQZkaIQM2nr1n3oj6ak2RATY/+kjLizgFWzgEfbCrbsyq68UoY5FPBnu4Z
+      E3iDZpaIqwKr0seUC7iA1xM5eHi5kty1oB7HABEBAAG0Ik5Tb2xpZCA8bnNvbGlk
+      LWdwZ0Bub2Rlc291cmNlLmNvbT6JATgEEwECACIFAldDN1ACGwMGCwkIBwMCBhUI
+      AgkKCwQWAgMBAh4BAheAAAoJEC9ZtfmbG+C0y7wH/i4xnab36dtrYW7RZwL8i6Sc
+      NjMx4j9+U1kr/F6YtqWd+JwCbBdar5zRghxPcYEq/qf7MbgAYcs1eSOuTOb7n7+o
+      xUwdH2iCtHhKh3Jr2mRw1ks7BbFZPB5KmkxHaEBfLT4d+I91ZuUdPXJ+0SXs9gzk
+      Dbz65Uhoz3W03aiF8HeL5JNARZFMbHHNVL05U1sTGTCOtu+1c/33f3TulQ/XZ3Y4
+      hwGCpLe0Tv7g7Lp3iLMZMWYPEa0a7S4u8he5IEJQLd8bE8jltcQvrdr3Fm8kI2Jg
+      BJmUmX4PSfhuTCFaR/yeCt3UoW883bs9LfbTzIx9DJGpRIu8Y0IL3b4sj/GoZVq5
+      AQ0EV0M3UAEIAKrTaC62ayzqOIPa7nS90BHHck4Z33a2tZF/uof38xNOiyWGhT8u
+      JeFoTTHn5SQq5Ftyu4K3K2fbbpuu/APQF05AaljzVkDGNMW4pSkgOasdysj831cu
+      ssrHX2RYS22wg80k6C/Hwmh5F45faEuNxsV+bPx7oPUrt5n6GMx84vEP3i1+FDBi
+      0pt/B/QnDFBXki1BGvJ35f5NwDefK8VaInxXP3ZN/WIbtn5dqxppkV/YkO7GiJlp
+      Jlju9rf3kKUIQzKQWxFsbCAPIHoWv7rH9RSxgDithXtG6Yg5R1aeBbJaPNXL9wpJ
+      YBJbiMjkAFaz4B95FOqZm3r7oHugiCGsHX0AEQEAAYkBHwQYAQIACQUCV0M3UAIb
+      DAAKCRAvWbX5mxvgtE/OB/0VN88DR3Y3fuqy7lq/dthkn7Dqm9YXdorZl3L152eE
+      IF882aG8FE3qZdaLGjQO4oShAyNWmRfSGuoH0XERXAI9n0r8m4mDMxE6rtP7tHet
+      y/5M8x3CTyuMgx5GLDaEUvBusnTD+/v/fBMwRK/cZ9du5PSG4R50rtst+oYyC2ao
+      x4I2SgjtF/cY7bECsZDplzatN3gv34PkcdIg8SLHAVlL4N5tzumDeizRspcSyoy2
+      K2+hwKU4C4+dekLLTg8rjnRROvplV2KtaEk6rxKtIRFDCoQng8wfJuIMrDNKvqZw
+      FRGt7cbvW5MCnuH8MhItOl9Uxp1wHp6gtav/h8Gp6MBa
+      =MARt
+      -----END PGP PUBLIC KEY BLOCK-----
+
+  - name: redis
+    url: |-
+      {% raw %}deb http://packages.redis.io/deb {{image.release}} main{% endraw %}
+    key: |-
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      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
+      Oi5R+3n0UUbz020kbQ==
+      =1K+h
+      -----END PGP PUBLIC KEY BLOCK-----
+
+  - name: postgresql
+    url: |-
+      {% raw %}deb http://apt.postgresql.org/pub/repos/apt {{image.release}}-pgdg main{% endraw %}
+    key: |-
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+      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
+      =DA1T
+      -----END PGP PUBLIC KEY BLOCK-----
+{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    export NODE_ENV=production
+    export NEXT_PUBLIC_ENV=production
+    export NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+    export NEXT_PUBLIC_POSTHOG_API_KEY=posthog-api-key
+    export NEXT_PUBLIC_INTERCOM_ID=intercom-id
+    {% raw %}export NEXT_PUBLIC_INFISICAL_PLATFORM_VERSION=v{{image.serial}}{% endraw %}
+    export NEXT_TELEMETRY_DISABLED=1
+
+    npm config delete http-proxy
+    npm config delete https-proxy
+
+    npm config rm proxy
+    npm config rm https-proxy
+
+    set HTTP_PROXY=null
+    set HTTPS_PROXY=null
+
+    npm config set fetch-timeout 90000
+
+    {% raw %}git clone https://github.com/Infisical/infisical -b infisical/v{{ image.serial }}-postgres --depth 1 /tmp/app{% endraw %}
+
+    mkdir /build-frontend && cd /build-frontend
+    cp /tmp/app/frontend/{package.json,package-lock.json,next.config.js} .
+    npm ci --only-production --ignore-scripts
+    cp -r /tmp/app/frontend/* /build-frontend/
+    npm run build
+    mkdir -p /infisical-frontend/.next/cache/images
+    cp -r /tmp/app/frontend/scripts /infisical-frontend/scripts
+    cp -r /build-frontend/public /infisical-frontend/public
+    cp -r /build-frontend/.next/standalone/* /infisical-frontend/
+    cp -r /build-frontend/.next/* /infisical-frontend/.next/ && rm -rf /infisical-frontend/.next/standalone/
+    npm cache clean --force
+
+    export NODE_ENV=
+    export NEXT_PUBLIC_ENV=
+
+    mkdir /backend && cd /backend
+    cp /tmp/app/backend/package*.json .
+    npm ci --only-production
+    cp -r /tmp/app/backend/* /backend/
+    cp -r /tmp/app/standalone-entrypoint.sh /backend/ && chmod +x /backend/standalone-entrypoint.sh
+    npm i -D tsconfig-paths
+    npm run build
+    cp -r /infisical-frontend /backend/frontend-build
+    chmod +x -R /backend/scripts /backend/frontend-build/scripts
+    npm cache clean --force
+
+    rm -rf /build-frontend /infisical-frontend/
+    touch .installed__
+    cd /
+
+    cat <<EOF >> /opt/infisical/settings.env
+    ENCRYPTION_KEY=$(/usr/bin/openssl rand -hex 16)
+    AUTH_SECRET=$(/usr/bin/openssl rand -hex 32)
+    EOF
+
+    cat <<EOF > /etc/postgresql/16/main/pg_hba.conf
+    local   all             postgres                                         peer
+    local   infisical       infuser                                          peer
+    local   all             all                                              peer
+    host    infisical       infuser,postgres         127.0.0.1/32            trust
+    host    all             all                      127.0.0.1/32            scram-sha-256
+    host    all             all                      ::1/128                 scram-sha-256
+    local   replication     all                                              peer
+    host    replication     all                      127.0.0.1/32            scram-sha-256
+    host    replication     all                      ::1/128                 scram-sha-256
+    EOF
+
+    systemctl enable redis-server.service
+    systemctl enable postgresql.service
+    systemctl enable infisical-migrator.service
+    systemctl enable infisical.service
+{% endblock post_files %}
+{# *** End of configuration block *** #}

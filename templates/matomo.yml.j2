@@ -1,0 +1,139 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}
+- path: /opt/certs/rootCA.config
+  generator: dump
+  content: |-
+    [ req ]
+    default_md = sha256
+    prompt = no
+    req_extensions = req_ext
+    distinguished_name = req_distinguished_name
+
+    [ req_distinguished_name ]
+    countryName = CA
+    stateOrProvinceName = Quebec
+    localityName = Montreal
+    organizationName = SoubiLabs
+
+    [ req_ext ]
+    keyUsage=critical,digitalSignature,keyEncipherment
+    extendedKeyUsage=critical,serverAuth,clientAuth
+
+- path: /opt/ssl.conf
+  generator: dump
+  content: |-
+    <VirtualHost *:443>
+            ServerAdmin webmaster@localhost
+            DocumentRoot /var/www/html
+            ErrorLog ${APACHE_LOG_DIR}/error.log
+            CustomLog ${APACHE_LOG_DIR}/access.log combined
+            SSLEngine on
+            SSLCertificateFile      /etc/ssl/certs/rootCA.crt
+            SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
+            <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
+                    SSLOptions +StdEnvVars
+            </FilesMatch>
+            <Directory /usr/lib/cgi-bin>
+                    SSLOptions +StdEnvVars
+            </Directory>
+    </VirtualHost>
+
+- path: /var/matomo/init.sh
+  generator: dump
+  mode: 0755
+  content: |-
+    #!/bin/bash
+{% raw %}
+    sed -i "/'tables_prefix' => 'matomo_'/ r /var/matomo/re.php" /var/www/html/plugins/Installation/FormDatabaseSetup.php
+    sed -i "/<h2>{{ 'Installation/ r /var/matomo/re.twig" /var/www/html/plugins/Installation/templates/databaseSetup.twig
+    sed -i "s|File integrity check failed and reported some errors. You should fix this issue and then refresh this page until it shows no error.|File integrity check failed and reported some errors. But this is expected due to some changes done on DB the setup form default values during the LXC packaging. The expected modified files are: /var/www/html/lang/en.json, /var/www/html/plugins/Installation/FormDatabaseSetup.php and /var/www/html/plugins/Installation/templates/databaseSetup.twig|" /var/www/html/lang/en.json
+
+    mysql -e "CREATE DATABASE matomo_db;"
+    mysql -e "CREATE USER 'matomo_u'@'localhost';"
+    mysql -e "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, DROP, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES ON matomo_db.* TO 'matomo_u'@'localhost';"
+    mysql -e "GRANT FILE ON *.* TO 'matomo_u'@'localhost';"
+{% endraw %}
+
+    a2enmod ssl
+    a2ensite default-ssl
+    a2dissite 000-default.conf
+    systemctl reload apache2
+
+- path: /var/matomo/re.twig
+  generator: dump
+  mode: 0644
+  content: |-
+
+        <p style="background: #f5f4f1; padding: 5px;">
+          You can use the pre-configured MySQL database below:<br>
+          <strong>Database Server: 127.0.0.1, Database Name: matomo_db, Login: matomo_u</strong>
+        </p>
+
+- path: /var/matomo/re.php
+  generator: dump
+  mode: 0644
+  content: |-
+                'username' => 'matomo_u',
+                'password' => '',
+                'dbname' => 'matomo_db',
+
+- path: /etc/systemd/system/matomo-init.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=DB init for Matomo
+    After=network.target mariadb.service apache2.service
+    ConditionPathExists=!/var/matomo/.initialized__
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=/var/matomo/init.sh
+    ExecStart=/usr/bin/touch /var/matomo/.initialized__
+
+    [Install]
+    WantedBy=multi-user.target
+{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}
+  - packages:
+    - unzip
+    - php
+    - php-mysql
+    - php-curl
+    - php-cli
+    - php-gd
+    - php-xml
+    - php-mbstring
+    - libapache2-mod-php
+    - mariadb-server
+    action: install
+{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+
+    {% raw %}wget -O /tmp/matomo.zip https://builds.matomo.org/matomo-{{image.serial}}.zip{% endraw %}
+    unzip /tmp/matomo.zip -d /tmp
+    rm -rf /var/www/html/*
+    cp -r /tmp/matomo/* /var/www/html/
+    chown www-data: -R /var/www/
+
+    cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
+
+    systemctl enable matomo-init
+    systemctl enable mariadb
+    systemctl enable apache2
+
+{% endblock post_files %}
+{# *** End of configuration block *** #}
