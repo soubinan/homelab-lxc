@@ -84,7 +84,7 @@ jobs:
           cache: 'pip' # caching pip dependencies
       - run: |
           pip install jinja2-cli
-          jinja2 ${{github.workspace}}/${{inputs.config_path}} -D APP_NAME=${{ inputs.app_name }} -D EXPOSED_PORTS=${{ inputs.app_ports }} > ${{github.workspace}}/lxc-template.yml
+          jinja2 ${{github.workspace}}/${{inputs.config_path}} -D APP_NAME="${{ inputs.app_name }}" -D EXPOSED_PORTS="${{ inputs.app_ports }}" > ${{github.workspace}}/lxc-template.yml
 
       - name: Build Image
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
