@@ -1,0 +1,52 @@
+name: Build ServARR LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-servarr.yml'
+      - 'templates/servarr.yml.j2'
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(date +%Y-%m)" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/servarr.yml.j2
+      app_name: servarr
+      app_version: ${{needs.init.outputs.app_version}}
+      app_ports: 8080, 8081, 8686, 7878, 8787, 8989, 6969, 9696, 8191, 6767 # QBitTorrent, SABnzbd, Lidarr, Radarr, Readarr, Sonaar, Whisparr, Prowlarr, FlareSolverr, Bazarr
+      description: |
+        Media organizer/manager stack (ARR) for usenet and torrent users.
+        This stack includes:
+        QBitTorrent, SABnzbd, Lidarr, Radarr, Readarr, Sonaar, Whisparr, Prowlarr, FlareSolverr, Bazarr
+      categories: Movies, TV, Torrent
+      project_source: https://wiki.servarr.com
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit
