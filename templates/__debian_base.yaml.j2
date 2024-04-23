@@ -1065,6 +1065,14 @@ files:
     * IP: \4
     * Ports: {{ EXPOSED_PORTS }}
 
+- path: /etc/motd.d/50_lxc-app-info.motd
+  generator: dump
+  mode: 0655
+  content: |-
+    .
+    {{ APP_NAME }} is listening on ports: {{ EXPOSED_PORTS }}
+    .
+
 packages:
   manager: apt
   update: true
@@ -1096,9 +1104,9 @@ packages:
   repositories:
   - name: sources
     url: |-
-      deb http://deb.debian.org/debian {{ image.release }} main non-free non-free-firmware
-      deb http://deb.debian.org/debian {{ image.release }}-updates main non-free non-free-firmware
-      deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware
+      deb http://deb.debian.org/debian {{ image.release }} main non-free non-free-firmware bookworm-backports contrib
+      deb http://deb.debian.org/debian {{ image.release }}-updates main non-free non-free-firmware bookworm-backports contrib
+      deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware bookworm-backports contrib
 {% endraw %}
 {% block repositories %}{% endblock repositories %}
 
@@ -1155,8 +1163,8 @@ actions:
     #!/bin/bash
     set -eux
 
-    apt-get autoremove --purge
-    apt-get clean
+    apt-get autoremove --purge -y
+    apt-get clean -y
 
     rm -rf /var/cache/apt/archives/*.deb
     rm -rf /tmp/*
