@@ -23,7 +23,6 @@
     User={{ arr }}
     Group=media
     Type=simple
-
     ExecStart=/opt/{{ arr | capitalize }}/{{ arr | capitalize }} -nobrowser -data=/var/lib/{{ arr }}/
     TimeoutStopSec=20
     KillMode=process
@@ -42,7 +41,6 @@
     User=flaresolverr
     Group=media
     Type=simple
-
     ExecStart=/opt/FlareSolverr/venv/bin/python -u /opt/FlareSolverr/src/flaresolverr.py
     TimeoutStopSec=20
     KillMode=process
@@ -61,7 +59,6 @@
     User=bazarr
     Group=media
     Type=simple
-
     ExecStart=/opt/bazarr/venv/bin/python -u /opt/bazarr/bazarr.py
     TimeoutStopSec=20
     KillMode=process
@@ -80,8 +77,25 @@
     User=qbittorrent
     Group=media
     Type=simple
-
     ExecStart=/usr/bin/qbittorrent-nox --daemon --first-and-last --skip-dialog=true
+    TimeoutStopSec=20
+    KillMode=process
+    Restart=on-failure
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /etc/systemd/system/sabnzbdplus.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=SABnzbdplus Daemon
+    After=syslog.target network.target
+    [Service]
+    User=sabnzbdplus
+    Group=media
+    Type=simple
+    ExecStart=/usr/bin/sabnzbdplus -s 0.0.0.0:8081
     TimeoutStopSec=20
     KillMode=process
     Restart=on-failure
@@ -103,6 +117,7 @@
     - unrar-free
     - unzip
     - qbittorrent-nox
+    - sabnzbdplus
     action: install
 {% endblock packages %}
 {# Set required repositories for packages to be installed #}
@@ -175,9 +190,12 @@
     systemctl enable bazarr.service
     rm -rf /opt/*.zip
 
-    mkdir /opt/qbittorrent
-    useradd --home-dir /opt/qbittorrent qbittorrent
+    useradd -m --home-dir /opt/qbittorrent qbittorrent
     usermod -aG media qbittorrent
     systemctl enable qbittorrent.service
+
+    useradd -m --home-dir /opt/sabnzbdplus sabnzbdplus
+    usermod -aG media sabnzbdplus
+    systemctl enable sabnzbdplus.service
 {% endblock post_files %}
 {# *** End of configuration block *** #}
