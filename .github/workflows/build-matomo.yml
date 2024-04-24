@@ -37,7 +37,7 @@ jobs:
       config_path: templates/matomo.yml.j2
       app_name: matomo
       app_version: ${{needs.init.outputs.app_version}}
-      app_port: 80
+      app_ports: 80
       description: Google Analytics alternative that protects your data and your customers' privacy.
       categories: Analytics, SEO, Tracking
       project_source: https://github.com/matomo-org/matomo
