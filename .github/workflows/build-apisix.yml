@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-apisix.yml'
-      - 'templates/apisix.yml'
+      - 'templates/apisix.yml.j2'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -34,9 +34,10 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/apisix.yml
+      config_path: templates/apisix.yml.j2
       app_name: apisix
       app_version: ${{needs.init.outputs.app_version}}
+      app_ports: 80, 9000, 9080, 9443
       description: Full Lifecycle API Management platform to help you manage microservices, delivering the ultimate performance and security.
       categories: Loadbalancer, API Gateway, Reverse Proxy
       project_source: https://github.com/apache/apisix

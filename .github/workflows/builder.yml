@@ -12,6 +12,9 @@ on:
       app_version:
         required: true
         type: string
+      app_ports:
+        required: true
+        type: string
       description:
         required: true
         type: string
@@ -67,18 +70,24 @@ jobs:
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip
+          sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip python3 python3-pip
           sudo snap install distrobuilder --classic
           mkdir -p /tmp/output/${{inputs.app_name}}
           mkdir -p /tmp/cache/${{inputs.app_name}}
           wget $(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.assets[] | select(.name|test("amd64.deb")) | .browser_download_url') -O /tmp/hurl_amd64.deb
           sudo apt-get install -y /tmp/hurl_amd64.deb
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
+          pip install jinja2-cli
+
+      - name: Build Distrobuilder template
+        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
+        run: |
+          jinja2 ${{github.workspace}}/${{inputs.config_path}} -D APP_NAME="${{ inputs.app_name }}" -D EXPOSED_PORTS="${{ inputs.app_ports }}" > ${{github.workspace}}/lxc-template.yml
 
       - name: Build Image
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
         run: |
-          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/${{inputs.config_path}} -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
+          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/lxc-template.yml -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
           mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz
           mv /tmp/output/${{inputs.app_name}}/meta.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz
           echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz| cut -f 1)" >> $GITHUB_ENV

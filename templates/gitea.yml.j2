@@ -1,0 +1,56 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}
+- path: /etc/systemd/system/gitea.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=Gitea (Git with a cup of tea)
+    After=network.target
+
+    [Service]
+    User=git
+    Group=git
+    LimitNOFILE=524288:524288
+    RestartSec=2s
+    Type=simple
+    WorkingDirectory=/var/lib/gitea/
+    ExecStart=/usr/local/bin/gitea web --config /etc/gitea/app.ini
+    Restart=always
+    Environment=USER=root HOME=/root GITEA_WORK_DIR=/var/lib/gitea
+
+    [Install]
+    WantedBy=multi-user.target
+{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}
+  - packages:
+    - git
+    action: install
+{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    {% raw %}wget -O /usr/local/bin/gitea https://dl.gitea.com/gitea/{{image.serial}}/gitea-{{image.serial}}-linux-amd64{% endraw %}
+    chmod +x /usr/local/bin/gitea
+
+    adduser --system --shell /bin/bash --gecos 'Git Version Control' --group --disabled-password --home /home/git git
+
+    mkdir -p /var/lib/gitea/{custom,data,log}
+    chown -R git:git /var/lib/gitea/
+    chmod -R 750 /var/lib/gitea/
+    mkdir /etc/gitea
+    chown root:git /etc/gitea
+    chmod 770 /etc/gitea
+
+    systemctl enable gitea.service
+{% endblock post_files %}
+{# *** End of configuration block *** #}

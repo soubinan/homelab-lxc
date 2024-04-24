@@ -22,9 +22,10 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/debian-test.yml
+      config_path: templates/debian-test.yml.j2
       app_name: dummy_app
       app_version: '0.0.0'
+      app_ports: 22
       description: Dummy test
       categories: test, dummy
       project_source: https://github.com/soubinan/homelab-lxc

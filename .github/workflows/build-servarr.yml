@@ -1,4 +1,4 @@
-name: Build n8n LXC Image
+name: Build ServARR LXC Image
 
 on:
   pull_request:
@@ -9,10 +9,10 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/build-n8n.yml'
-      - 'templates/n8n.yml.j2'
+      - '.github/workflows/build-servarr.yml'
+      - 'templates/servarr.yml.j2'
   schedule:
-    - cron: '0 3 */1 * *'
+    - cron: '0 0 1 * *'
 
 jobs:
   init:
@@ -22,7 +22,7 @@ jobs:
       - name: Get Application version
         id: get-app-version
         run: |
-          echo "APP_VERSION=$(curl -s https://api.github.com/repos/n8n-io/n8n/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(date +%Y-%m)" >> $GITHUB_OUTPUT
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 
@@ -34,13 +34,16 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/n8n.yml.j2
-      app_name: n8n
+      config_path: templates/servarr.yml.j2
+      app_name: servarr
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 5678
-      description: n8n is a free and source-available workflow automation tool.
-      categories: Automation, Workflows
-      project_source: https://github.com/n8n-io/n8n
+      app_ports: 8080, 8081, 8686, 7878, 8787, 8989, 6969, 9696, 8191, 6767 # QBitTorrent, SABnzbd, Lidarr, Radarr, Readarr, Sonaar, Whisparr, Prowlarr, FlareSolverr, Bazarr
+      description: |
+        Media organizer/manager stack (ARR) for usenet and torrent users.
+        This stack includes:
+        QBitTorrent, SABnzbd, Lidarr, Radarr, Readarr, Sonaar, Whisparr, Prowlarr, FlareSolverr, Bazarr
+      categories: Movies, TV, Torrent
+      project_source: https://wiki.servarr.com
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}

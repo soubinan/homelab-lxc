@@ -1,0 +1,100 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}
+- path: /etc/systemd/system/jellyfin.service
+  generator: dump
+  content: |-
+    [Unit]
+    Description = Jellyfin Media Server
+    After = network-online.target
+
+    [Service]
+    Type = simple
+    EnvironmentFile = /etc/default/jellyfin
+    WorkingDirectory = /var/lib/jellyfin
+    ExecStart = /usr/bin/jellyfin $JELLYFIN_WEB_OPT $JELLYFIN_RESTART_OPT $JELLYFIN_FFMPEG_OPT $JELLYFIN_SERVICE_OPT $JELLYFIN_NOWEBAPP_OPT $JELLYFIN_ADDITIONAL_OPTS
+    Restart = on-failure
+    TimeoutSec = 15
+    SuccessExitStatus=0 143
+
+    [Install]
+    WantedBy = multi-user.target
+{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    cat <<EOF | tee /etc/apt/sources.list.d/jellyfin.sources
+    Types: deb
+    {% raw %}URIs: https://repo.jellyfin.org/{{ image.distribution }}{% endraw %}
+    {% raw %}Suites: {{ image.release }}{% endraw %}
+    Components: main
+    {% raw %}Architectures: {{ image.architecture }}{% endraw %}
+    Signed-By:
+     -----BEGIN PGP PUBLIC KEY BLOCK-----
+     .
+     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
+     oqYC5A==
+     =OWPs
+     -----END PGP PUBLIC KEY BLOCK-----
+    EOF
+
+    apt update -y
+    {% raw %}apt install -y jellyfin={{image.serial}}-1{% endraw %}
+
+    systemctl enable jellyfin.service
+{% endblock post_files %}
+{# *** End of configuration block *** #}

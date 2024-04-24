@@ -1,0 +1,49 @@
+{% extends "./__debian_base.yaml.j2" %}
+{# *** Enter your configuration bellow *** #}
+{% block dumps %}
+- path: /etc/systemd/system/jupyterlab.service
+  generator: dump
+  mode: 0440
+  content: |-
+    [Unit]
+    Description=JupyterLab
+    After=network.target
+    ConditionPathExists=/jupyterlab/.installed__
+
+    [Service]
+    Type = simple
+    ExecStart=/jupyterlab/bin/jupyter-lab --allow-root --no-browser --ip=0.0.0.0 --port=8888
+    TimeoutSec = 15
+    Restart = on-failure
+
+    [Install]
+    WantedBy=multi-user.target
+{% endblock dumps %}
+{# Set packages to be installed #}
+{% block packages %}
+  - packages:
+    - git
+    - python3-pip
+    - python3-venv
+    action: install
+{% endblock packages %}
+{# Set required repositories for packages to be installed #}
+{% block repositories %}{% endblock repositories %}
+{# Scripts to be excuted after packages installation and all files has been copied #}
+{% block post_files %}
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    cd /
+    python3 -m venv jupyterlab
+    cd jupyterlab && source bin/activate
+    {% raw %}pip install jupyterlab==v{{ image.serial }}{% endraw %}
+
+    touch /jupyterlab/.installed__
+
+    systemctl enable jupyterlab.service
+{% endblock post_files %}
+{# *** End of configuration block *** #}

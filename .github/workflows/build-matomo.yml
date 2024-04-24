@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-matomo.yml'
-      - 'templates/matomo.yml'
+      - 'templates/matomo.yml.j2'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -34,9 +34,10 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/matomo.yml
+      config_path: templates/matomo.yml.j2
       app_name: matomo
       app_version: ${{needs.init.outputs.app_version}}
+      app_ports: 80
       description: Google Analytics alternative that protects your data and your customers' privacy.
       categories: Analytics, SEO, Tracking
       project_source: https://github.com/matomo-org/matomo
