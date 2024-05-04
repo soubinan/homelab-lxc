@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
       - reopened
       - closed
     branches:
@@ -37,7 +38,6 @@ jobs:
       config_path: templates/jenkins.yml.j2
       app_name: jenkins
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 8080
       description: The leading open source automation server. Build great things at any scale.
       categories: Automation, CI CD, Dev
       project_source: https://github.com/jenkinsci/jenkins

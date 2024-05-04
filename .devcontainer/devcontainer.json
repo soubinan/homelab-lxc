@@ -6,7 +6,7 @@
 	"postCreateCommand": "pip3 install jinja2-cli",
 	"remoteUser": "root",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/homelab-lxc,type=bind,consistency=cached,Z=true",
-	"workspaceFolder": "/workspace",
+	"workspaceFolder": "/workspace/homelab-lxc",
 	"mounts": [
 	  "source=/run/user/1000/podman/podman.sock,target=/var/run/docker.sock,type=bind,consistency=cached"
 	]

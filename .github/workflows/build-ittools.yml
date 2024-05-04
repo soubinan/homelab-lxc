@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
       - reopened
       - closed
     branches:
@@ -37,7 +38,6 @@ jobs:
       config_path: templates/ittools.yml.j2
       app_name: it-tools
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 80
       description: Useful tools for developers and peoples working in IT.
       categories: Dev, Collection
       project_source: https://github.com/CorentinTh/it-tools

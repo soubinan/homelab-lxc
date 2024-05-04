@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
       - reopened
       - closed
     branches:
@@ -37,7 +38,6 @@ jobs:
       config_path: templates/servarr.yml.j2
       app_name: servarr
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 8080, 8081, 8686, 7878, 8787, 8989, 6969, 9696, 8191, 6767 # QBitTorrent, SABnzbd, Lidarr, Radarr, Readarr, Sonaar, Whisparr, Prowlarr, FlareSolverr, Bazarr
       description: Media organizer/manager stack (ARR) for usenet and torrent users. This stack includes QBitTorrent, SABnzbd, FlareSolverr, Bazarr and the ARR stack.
       categories: Movies, TV, Torrent
       project_source: https://wiki.servarr.com

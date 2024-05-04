@@ -4,6 +4,7 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
       - reopened
       - closed
     branches:
@@ -37,7 +38,6 @@ jobs:
       config_path: templates/nextcloud.yml.j2
       app_name: nextcloud
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 80, 8080, 8443
       description: Fully open-source, on-premises content collaboration platform.
       categories: Personal Cloud, Data Privacy
       project_source: https://github.com/nextcloud/server
