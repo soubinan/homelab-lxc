@@ -38,7 +38,6 @@ jobs:
       config_path: templates/homarr.yml.j2
       app_name: homarr
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 7575
       description: A simple, yet powerful dashboard for your server.
       categories: Homepage
       project_source: https://github.com/ajnart/homarr

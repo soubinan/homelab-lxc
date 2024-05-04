@@ -38,7 +38,6 @@ jobs:
       config_path: templates/n8n.yml.j2
       app_name: n8n
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 5678
       description: n8n is a free and source-available workflow automation tool.
       categories: Automation, Workflows
       project_source: https://github.com/n8n-io/n8n

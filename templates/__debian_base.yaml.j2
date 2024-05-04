@@ -1061,17 +1061,44 @@ files:
 
     Welcome on your custom {{ APP_NAME }} LXC !
 
-    {{ APP_NAME }} is listening on:
-    * IP: \4
-    * Ports: {{ EXPOSED_PORTS }}
 
-- path: /etc/motd.d/50_lxc-app-info.motd
+- path: /etc/cron.d/welcome
+  generator: dump
+  mode: 0644
+  content: |-
+    00,10,20,30,40,50 * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
+
+- path: /etc/profile.d/50-welcome.sh
   generator: dump
   mode: 0655
   content: |-
-    .
-    {{ APP_NAME }} is listening on ports: {{ EXPOSED_PORTS }}
-    .
+    #!/bin/bash
+
+    ports=$(ss -ptuln | grep -vE "systemd|next-router|next-render" | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
+
+    num_ports=$(echo "$ports" | wc -l)
+    ips=$(ip a|grep "inet "|grep -v "127.0.0.1"|awk '{print $2}')
+
+    printf "\n"
+    printf "+-----------------------------------+\n"
+    printf "| %-33s |\n" "{{ APP_NAME | capitalize }} is listening on"
+
+    while read -r ip; do
+        printf "| %-33s |\n" "  => $ip"
+        done <<< "$ips"
+        printf "+------------+----------------------+\n"
+
+    printf "| %-10s | %-20s |\n" "Ports" "Process"
+    printf "+------------+----------------------+\n"
+
+    while read -r port; do
+        application=$(ss -lptn "sport = :${port}" | tail -n +2 | awk '{print $6}' | cut -d'"' -f2)
+            printf "| %-10s | %-20s |\n" "$port" "$application"
+            done <<< "$ports"
+
+            # Print table footer
+            printf "+------------+----------------------+\n"
+    printf "\n"
 
 packages:
   manager: apt

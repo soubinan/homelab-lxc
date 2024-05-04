@@ -38,7 +38,6 @@ jobs:
       config_path: templates/jupyterlab.yml.j2
       app_name: jupyterlab
       app_version: ${{needs.init.outputs.app_version}}
-      app_ports: 8888
       description: JupyterLab is the latest web-based interactive development environment for notebooks, code, and data.
       categories: IDE, Python, Dev
       project_source: https://github.com/jupyterlab/jupyterlab
