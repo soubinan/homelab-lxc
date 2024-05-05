@@ -1066,6 +1066,7 @@ files:
   generator: dump
   mode: 0644
   content: |-
+    @reboot * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
     00,10,20,30,40,50 * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
 
 - path: /etc/profile.d/50-welcome.sh
@@ -1074,7 +1075,7 @@ files:
   content: |-
     #!/bin/bash
 
-    ports=$(ss -ptuln | grep -vE "systemd|next-router|next-render" | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
+    ports=$(ss -ptuln4 | grep -vE "systemd|next-router|next-render|127.0.0.|%lo" | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
 
     num_ports=$(echo "$ports" | wc -l)
     ips=$(ip a|grep "inet "|grep -v "127.0.0.1"|awk '{print $2}')
@@ -1092,7 +1093,7 @@ files:
     printf "+------------+----------------------+\n"
 
     while read -r port; do
-        application=$(ss -lptn "sport = :${port}" | tail -n +2 | awk '{print $6}' | cut -d'"' -f2)
+        application=$(ss -lptn4 "sport = :${port}" | tail -n +2 | awk '{print $6}' | cut -d'"' -f2 | sort -u)
             printf "| %-10s | %-20s |\n" "$port" "$application"
             done <<< "$ports"
 
