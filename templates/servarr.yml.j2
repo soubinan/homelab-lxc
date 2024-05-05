@@ -8,7 +8,7 @@
     'prowlarr': 'http://prowlarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}',
   }
 %}
-{% extends "./__debian_base.yaml.j2" %}
+{% extends "./__debian_base.yml.j2" %}
 {# *** Enter your configuration bellow *** #}
 {% block dumps %}
 {% for arr in arrs %}
