@@ -102,7 +102,6 @@
     Type=oneshot
     ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.locking' => '\\\\OC\\\\Memcache\\\\Redis'," /var/www/html/config/config.php
     ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.local' => '\\\\OC\\\\Memcache\\\\APCu'," /var/www/html/config/config.php
-    ExecStart=/bin/bash -c "grep '\\\\OC\\\\Memcache\\\\APCu' /var/www/html/config/config.php; if [ "$?" -eq 0 ]; then touch /var/nextcloud/.optimized__; fi"
     ExecStart=/usr/bin/chmod 660 /var/www/html/config/config.php
     ExecStart=/usr/bin/chown root:www-data /var/www/html/config/config.php
     ExecStart=/usr/bin/touch /var/nextcloud/.optimized__
@@ -156,7 +155,6 @@
     cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
 
     PHP_VERSION=$(php -v|grep cli|awk '{print $2}'|cut -d . -f1-2)
-    
 
     sed -iE "s|^output_buffering.*|output_buffering = Off|" /etc/php/$PHP_VERSION/apache2/php.ini
     sed -iE "s|^memory_limit.*|memory_limit = 512M|" /etc/php/$PHP_VERSION/apache2/php.ini
@@ -171,6 +169,7 @@
     sed -iE "s|^;opcache.memory_consumption.*|opcache.memory_consumption = 128|" /etc/php/$PHP_VERSION/apache2/php.ini
     sed -iE "s|^;opcache.save_comments.*|opcache.save_comments = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
     sed -iE "s|^;opcache.revalidate_freq.*|opcache.revalidate_freq = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+
     sed -iE "s|'dbname' => '',|'dbname' => 'nextcloud_db',|" /var/www/html/core/Controller/SetupController.php
     sed -iE "s|'dbuser' => '',|'dbuser' => 'nextcloud_u',|" /var/www/html/core/Controller/SetupController.php
 

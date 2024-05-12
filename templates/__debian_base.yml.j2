@@ -1059,8 +1059,7 @@ files:
            ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░       ░▒▓█▓▒░ 
     ░▒▓███████▓▒░  ░▒▓██████▓▒░  ░▒▓██████▓▒░ ░▒▓███████▓▒░ ░▒▓█▓▒░░▒▓████████▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░ ░▒▓███████▓▒░  
 
-    Welcome on your custom {{ APP_NAME }} LXC !
-
+    Welcome on your custom {{ APP_NAME | upper }} LXC !
 
 - path: /etc/cron.d/welcome
   generator: dump
@@ -1082,7 +1081,7 @@ files:
 
     printf "\n"
     printf "+-----------------------------------+\n"
-    printf "| %-33s |\n" "{{ APP_NAME | capitalize }} is listening on"
+    printf "| %-33s |\n" "{{ APP_NAME | upper }} is listening on"
 
     while read -r ip; do
         printf "| %-33s |\n" "  => $ip"

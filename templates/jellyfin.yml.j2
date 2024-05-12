@@ -93,7 +93,7 @@
     EOF
 
     apt update -y
-    {% raw %}apt install -y jellyfin={{image.serial}}-1{% endraw %}
+    apt install -y jellyfin
 
     systemctl enable jellyfin.service
 {% endblock post_files %}
