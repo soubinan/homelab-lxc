@@ -1077,7 +1077,7 @@ files:
     ports=$(ss -ptuln4 | grep -vE "systemd|next-router|next-render|127.0.0.|%lo" | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
 
     num_ports=$(echo "$ports" | wc -l)
-    ips=$(ip a|grep "inet "|grep -v "127.0.0.1"|awk '{print $2}')
+    ips=$(ip a|grep "inet "|awk '{print $2}')
 
     printf "\n"
     printf "+-----------------------------------+\n"
