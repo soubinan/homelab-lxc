@@ -1,9 +1,9 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: IT-Tools
+
+files:
 - path: /var/nginx.conf
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     worker_processes  1;
     worker_rlimit_nofile 8192;
@@ -27,17 +27,13 @@
           }
       }
     }
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - git
-    - nodejs
-    - nginx
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+
+packages:
+- git
+- nodejs
+- nginx
+
+repositories:
   - name: nodejs
     url: |-
       deb http://deb.nodesource.com/node_20.x nodistro main
@@ -71,9 +67,8 @@
       FRGt7cbvW5MCnuH8MhItOl9Uxp1wHp6gtav/h8Gp6MBa
       =MARt
       -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -82,7 +77,7 @@
 
     export NPM_CONFIG_LOGLEVEL=warn
     export CI=true
-    {% raw %}git clone https://github.com/CorentinTh/it-tools -b v{{ image.serial }} --depth 1 /tmp/app{% endraw %}
+    git clone https://github.com/CorentinTh/it-tools -b v{{ image.serial }} --depth 1 /tmp/app
 
     mkdir /install
     cd /install
@@ -98,5 +93,3 @@
     rm -rf /install
 
     systemctl enable nginx.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

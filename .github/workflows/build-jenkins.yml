@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/jenkins.yml.j2
+      config_path: templates/jenkins.yml
       app_name: jenkins
       app_version: ${{needs.init.outputs.app_version}}
       description: The leading open source automation server. Build great things at any scale.

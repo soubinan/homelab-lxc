@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/nextcloud.yml.j2
+      config_path: templates/nextcloud.yml
       app_name: nextcloud
       app_version: ${{needs.init.outputs.app_version}}
       description: Fully open-source, on-premises content collaboration platform.

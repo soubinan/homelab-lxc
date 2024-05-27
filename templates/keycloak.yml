@@ -1,9 +1,9 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: Keycloak
+
+files:
 - path: /etc/keycloak/creds.env
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     KEYCLOAK_ADMIN=
     KEYCLOAK_ADMIN_PASSWORD=
@@ -11,7 +11,7 @@
 
 - path: /opt/utils/set-ip.sh
   generator: dump
-  mode: 0755
+  mode: '0755'
   content: |-
     sleep 5
     HOSTN=$(ip addr list eth0 | grep -E "inet .* metric" | cut -d' ' -f6 | cut -d/ -f1 | head -n 1)
@@ -19,7 +19,7 @@
 
 - path: /etc/systemd/system/keycloak-init.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=Open Source Identity and Access Management
@@ -35,7 +35,7 @@
 
 - path: /etc/systemd/system/keycloak.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=Open Source Identity and Access Management
@@ -106,18 +106,12 @@
 
     [alt_names]
     DNS.1 = keycloak.lan
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - openjdk-17-jre
-    - fontconfig
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+packages:
+- openjdk-17-jre
+- fontconfig
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -131,8 +125,8 @@
     openssl req -new -key /etc/ssl/private/keycloak.key -out /etc/ssl/private/keycloak.csr -config /opt/certs/csr.config
     openssl x509 -req -in /etc/ssl/private/keycloak.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/keycloak.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
 
-    {% raw %}wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz{% endraw %}
-    {% raw %}tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/{% endraw %}
+    wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz
+    tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/
 
     cat <<EOF > /opt/keycloak/conf/keycloak.conf
     hostname=0.0.0.0
@@ -146,5 +140,3 @@
 
     systemctl enable keycloak-init.service
     systemctl enable keycloak.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

@@ -1,9 +1,9 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: Gitea
+
+files:
 - path: /etc/systemd/system/gitea.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=Gitea (Git with a cup of tea)
@@ -22,24 +22,18 @@
 
     [Install]
     WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - git
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+packages:
+- git
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
     #!/bin/bash
     set -eux
 
-    {% raw %}wget -O /usr/local/bin/gitea https://dl.gitea.com/gitea/{{image.serial}}/gitea-{{image.serial}}-linux-amd64{% endraw %}
+    wget -O /usr/local/bin/gitea https://dl.gitea.com/gitea/{{image.serial}}/gitea-{{image.serial}}-linux-amd64
     chmod +x /usr/local/bin/gitea
 
     adduser --system --shell /bin/bash --gecos 'Git Version Control' --group --disabled-password --home /home/git git
@@ -52,5 +46,3 @@
     chmod 770 /etc/gitea
 
     systemctl enable gitea.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/ittools.yml.j2
+      config_path: templates/ittools.yml
       app_name: it-tools
       app_version: ${{needs.init.outputs.app_version}}
       description: Useful tools for developers and peoples working in IT.

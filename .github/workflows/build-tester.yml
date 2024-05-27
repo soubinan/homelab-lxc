@@ -23,7 +23,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/debian-test.yml.j2
+      config_path: templates/debian-test.yml
       app_name: dummy_app
       app_version: '0.0.0'
       description: Dummy test

@@ -1,54 +1,50 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
-- path: /etc/jellyseerr/jellyseerr.conf
+name: Homarr
+
+files:
+- path: /opt/homarr/settings.env
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
-    # Jellyseerr's default port is 5055, if you want to use both, change this.
-    # specify on which port to listen
-    PORT=5055
+    PORT=7575
+    NEXT_TELEMETRY_DISABLED=1
+    NODE_ENV="production"
+    NODE_OPTIONS="--no-experimental-fetch"
+    DATABASE_URL="file:/data/db.sqlite"
+    NEXTAUTH_URL="http://localhost:7575"
+    NEXTAUTH_SECRET="NOT_IN_USE_BECAUSE_JWTS_ARE_UNUSE"
+    NEXT_PUBLIC_DISABLE_ANALYTICS="true"
+    HOSTNAME="127.0.0.1"
+    DEFAULT_COLOR_SCHEME="dark"
 
-    # specify on which interface to listen, by default jellyseerr listens on all interfaces
-    #HOST=127.0.0.1
-
-    # Uncomment if your media server is emby instead of jellyfin.
-    # JELLYFIN_TYPE=emby
-
-- path: /etc/systemd/system/jellyseerr.service
+- path: /etc/systemd/system/homarr.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
-    Description=Jellyseerr Service
-    Wants=network-online.target
-    After=network-online.target
+    Description=Homarr Dashboard
+    After=network.target
+    ConditionPathExists=/app/.installed__
 
     [Service]
-    EnvironmentFile=/etc/jellyseerr/jellyseerr.conf
-    Environment=NODE_ENV=production
-    Type=exec
-    Restart=on-failure
-    WorkingDirectory=/opt/jellyseerr
-    ExecStart=/usr/bin/node dist/index.js
+    Type=simple
+    WorkingDirectory=/app
+    EnvironmentFile=/app/.env
+    PIDFile=/opt/homarr/homarr.pid
+    ExecStart=/usr/bin/bash scripts/run.sh
+    Restart=always
 
     [Install]
     WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - tzdata
-    - git
-    - nodejs
-    - yarn
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+
+packages:
+- git
+- nodejs
+- yarn
+
+repositories:
   - name: nodejs
     url: |-
-      deb http://deb.nodesource.com/node_18.x nodistro main
+      deb http://deb.nodesource.com/node_20.x nodistro main
     key: |-
       -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -304,23 +300,29 @@
       1qXVLvbNiyYug0lvwXsyfwu6IX+wl+kAP5NrRYuX8H+L0eauTGrRsld7OZ3H
       =e4wy
       -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
     #!/bin/bash
     set -eux
 
-    {% raw %}git clone https://github.com/Fallenbagel/jellyseerr -b v{{ image.serial }} --depth 1 /opt/jellyseerr{% endraw %}
-    cd /opt/jellyseerr
-    yarn global add node-gyp
-    CYPRESS_INSTALL_BINARY=0 yarn install --frozen-lockfile --network-timeout 1000000
-    yarn build
-    yarn install --production --ignore-scripts --prefer-offline
-    rm -rf src server .next/cache
+    mkdir /data
+    git clone https://github.com/ajnart/homarr -b v{{ image.serial }} --depth 1 /app
 
-    systemctl enable jellyseerr.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}
+    cd /app
+    yarn install
+    cp /opt/homarr/settings.env .env
+    yarn build
+    cp -r drizzle/migrate/ migrate/
+    cp tsconfig.json migrate/tsconfig.json
+    touch migrate/yarn.lock
+    yarn db:migrate
+    yarn cache clean
+    rm -rf node_modules
+    cp -r .next/standalone/* .
+    chmod +x scripts/run.sh
+    touch .installed__
+
+    systemctl enable homarr.service

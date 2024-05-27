@@ -1,15 +1,10 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - openjdk-17-jre
-    - fontconfig
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+name: Jenkins
+
+packages:
+- openjdk-17-jre
+- fontconfig
+
+repositories:
   - name: jenkins
     url: |-
       deb https://pkg.jenkins.io/debian-stable binary/
@@ -66,9 +61,8 @@
       MetBbjkOnNXyWrP3SAPwqQMMg/vNa+mJIjoNByw=
       =sdsH
       -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -76,8 +70,6 @@
     set -eux
 
     apt update -y
-    {% raw %}apt install -y jenkins={{image.serial}}{% endraw %}
+    apt install -y jenkins
 
     systemctl enable jenkins.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

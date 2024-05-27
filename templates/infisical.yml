@@ -1,9 +1,9 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: Infisical
+
+files:
 - path: /opt/infisical/settings.env
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     PORT=8080
     HOST=0.0.0.0
@@ -19,7 +19,7 @@
 
 - path: /etc/systemd/system/infisical-initdb.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=DB initializer for Infisical in postgresql
@@ -44,7 +44,7 @@
 
 - path: /etc/systemd/system/infisical-migrator.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=DB migrator for Infisical
@@ -67,7 +67,7 @@
 
 - path: /etc/systemd/system/infisical.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=Open Source Secret Management
@@ -87,24 +87,17 @@
 
     [Install]
     WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - software-properties-common
-    - apt-transport-https
-    - git
-    - nodejs
-    action: install
 
-  - packages:
-    - redis
-    - redis-server
-    - postgresql-16
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+packages:
+- software-properties-common
+- apt-transport-https
+- git
+- nodejs
+- redis
+- redis-server
+- postgresql-16
+
+repositories:
   - name: nodejs
     url: |-
       deb http://deb.nodesource.com/node_20.x nodistro main
@@ -141,7 +134,7 @@
 
   - name: redis
     url: |-
-      {% raw %}deb http://packages.redis.io/deb {{image.release}} main{% endraw %}
+      deb http://packages.redis.io/deb {{image.release}} main
     key: |-
       -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -198,7 +191,7 @@
 
   - name: postgresql
     url: |-
-      {% raw %}deb http://apt.postgresql.org/pub/repos/apt {{image.release}}-pgdg main{% endraw %}
+      deb http://apt.postgresql.org/pub/repos/apt {{image.release}}-pgdg main
     key: |-
       -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -277,9 +270,8 @@
       Gtz3cydIohvNO9d90+29h0eGEDYti7j7maHkBKUAwlcPvMg5m3Y=
       =DA1T
       -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -291,7 +283,7 @@
     export NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
     export NEXT_PUBLIC_POSTHOG_API_KEY=posthog-api-key
     export NEXT_PUBLIC_INTERCOM_ID=intercom-id
-    {% raw %}export NEXT_PUBLIC_INFISICAL_PLATFORM_VERSION=v{{image.serial}}{% endraw %}
+    export NEXT_PUBLIC_INFISICAL_PLATFORM_VERSION=v{{image.serial}}
     export NEXT_TELEMETRY_DISABLED=1
 
     npm config delete http-proxy
@@ -305,7 +297,7 @@
 
     npm config set fetch-timeout 90000
 
-    {% raw %}git clone https://github.com/Infisical/infisical -b infisical/v{{ image.serial }}-postgres --depth 1 /tmp/app{% endraw %}
+    git clone https://github.com/Infisical/infisical -b infisical/v{{ image.serial }}-postgres --depth 1 /tmp/app
 
     mkdir /build-frontend && cd /build-frontend
     cp /tmp/app/frontend/{package.json,package-lock.json,next.config.js} .
@@ -358,5 +350,3 @@
     systemctl enable postgresql.service
     systemctl enable infisical-migrator.service
     systemctl enable infisical.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

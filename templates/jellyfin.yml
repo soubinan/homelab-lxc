@@ -1,6 +1,6 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: Jenkins
+
+files:
 - path: /etc/systemd/system/jellyfin.service
   generator: dump
   content: |-
@@ -19,13 +19,8 @@
 
     [Install]
     WantedBy = multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -34,10 +29,10 @@
 
     cat <<EOF | tee /etc/apt/sources.list.d/jellyfin.sources
     Types: deb
-    {% raw %}URIs: https://repo.jellyfin.org/{{ image.distribution }}{% endraw %}
-    {% raw %}Suites: {{ image.release }}{% endraw %}
+    URIs: https://repo.jellyfin.org/{{ image.distribution }}
+    Suites: {{ image.release }}
     Components: main
-    {% raw %}Architectures: {{ image.architecture }}{% endraw %}
+    Architectures: {{ image.architecture }}
     Signed-By:
      -----BEGIN PGP PUBLIC KEY BLOCK-----
      .
@@ -96,5 +91,3 @@
     apt install -y jellyfin
 
     systemctl enable jellyfin.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

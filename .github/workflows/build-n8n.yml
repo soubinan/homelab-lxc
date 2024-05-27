@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/n8n.yml.j2
+      config_path: templates/n8n.yml
       app_name: n8n
       app_version: ${{needs.init.outputs.app_version}}
       description: n8n is a free and source-available workflow automation tool.
