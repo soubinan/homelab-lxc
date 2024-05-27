@@ -13,7 +13,7 @@ on:
       - '.github/workflows/build-jellyfin.yml'
       - 'templates/jellyfin.yml.j2'
   schedule:
-    - cron: '0 3 */1 * *'
+    - cron: '0 3 */15 * *'
 
 jobs:
   init:
@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/jellyfin.yml.j2
+      config_path: templates/jellyfin.yml
       app_name: jellyfin
       app_version: ${{needs.init.outputs.app_version}}
       description: A Free Software Media System to collect, manage, and stream your media.

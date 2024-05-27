@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/servarr.yml.j2
+      config_path: templates/servarr.yml
       app_name: servarr
       app_version: ${{needs.init.outputs.app_version}}
       description: Media organizer/manager stack (ARR) for usenet and torrent users. This stack includes QBitTorrent, SABnzbd, FlareSolverr, Bazarr and the ARR stack.

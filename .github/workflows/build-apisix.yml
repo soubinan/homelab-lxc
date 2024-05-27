@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/apisix.yml.j2
+      config_path: templates/apisix.yml
       app_name: apisix
       app_version: ${{needs.init.outputs.app_version}}
       description: Full Lifecycle API Management platform to help you manage microservices, delivering the ultimate performance and security.

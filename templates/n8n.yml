@@ -1,9 +1,9 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: n8n
+
+files:
 - path: /opt/n8n/.env
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     PORT=5678
     NODE_ENV="production"
@@ -12,7 +12,7 @@
 
 - path: /etc/systemd/system/n8n.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=n8n - Workflow automation tool
@@ -28,16 +28,12 @@
 
     [Install]
     WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - git
-    - nodejs
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+
+packages:
+- git
+- nodejs
+
+repositories:
   - name: nodejs
     url: |-
       deb http://deb.nodesource.com/node_20.x nodistro main
@@ -71,9 +67,8 @@
       FRGt7cbvW5MCnuH8MhItOl9Uxp1wHp6gtav/h8Gp6MBa
       =MARt
       -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -84,9 +79,7 @@
     NODE_ENV=production
     N8N_RELEASE_TYPE=stable
 
-    {% raw %}npm install -g n8n@v{{ image.serial }}{% endraw %}
+    npm install -g n8n@v{{ image.serial }}
     touch /opt/n8n/.installed__
 
     systemctl enable n8n.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}

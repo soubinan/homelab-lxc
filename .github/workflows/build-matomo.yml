@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/matomo.yml.j2
+      config_path: templates/matomo.yml
       app_name: matomo
       app_version: ${{needs.init.outputs.app_version}}
       description: Google Analytics alternative that protects your data and your customers' privacy.

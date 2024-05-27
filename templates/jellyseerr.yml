@@ -1,95 +1,50 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
-- path: /etc/security/limits.d/apisix-nofile.conf
-  generator: dump
-  mode: 0440
-  content: |-
-    root soft nofile 4096
-    root hard nofile 8192
-    apisix soft nofile 4096
-    apisix hard nofile 8192
+name: Jellyseerr
 
-- path: /etc/systemd/system/apisix.service
+files:
+- path: /etc/jellyseerr/jellyseerr.conf
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
-    # apisix systemd service
-    # https://github.com/api7/apisix-build-tools/blob/master/usr/lib/systemd/system/apisix.service
+    # Jellyseerr's default port is 5055, if you want to use both, change this.
+    # specify on which port to listen
+    PORT=5055
+
+    # specify on which interface to listen, by default jellyseerr listens on all interfaces
+    #HOST=127.0.0.1
+
+    # Uncomment if your media server is emby instead of jellyfin.
+    # JELLYFIN_TYPE=emby
+
+- path: /etc/systemd/system/jellyseerr.service
+  generator: dump
+  mode: '0440'
+  content: |-
     [Unit]
-    Description=apisix
-    #Conflicts=apisix.service
-    After=network-online.target etcd.service
+    Description=Jellyseerr Service
     Wants=network-online.target
+    After=network-online.target
 
     [Service]
-    Type=forking
+    EnvironmentFile=/etc/jellyseerr/jellyseerr.conf
+    Environment=NODE_ENV=production
+    Type=exec
     Restart=on-failure
-    WorkingDirectory=/usr/local/apisix
-    ExecStartPre=/bin/rm -f /usr/local/apisix/logs/worker_events.sock
-    ExecStart=/usr/bin/apisix start
-    ExecStop=/usr/bin/apisix stop
-    ExecReload=/usr/bin/apisix reload
-    LimitNOFILE=524288:524288
+    WorkingDirectory=/opt/jellyseerr
+    ExecStart=/usr/bin/node dist/index.js
 
     [Install]
     WantedBy=multi-user.target
 
-- path: /etc/systemd/system/etcd.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=etcd - highly-available key value store
-    Documentation=https://etcd.io/docs
-    Documentation=man:etcd
-    After=network.target
-    Wants=network-online.target
+packages:
+- tzdata
+- git
+- nodejs
+- yarn
 
-    [Service]
-    Environment=DAEMON_ARGS=
-    Environment=ETCD_NAME=%H
-    Environment=ETCD_DATA_DIR=/var/lib/etcd/default
-    EnvironmentFile=-/etc/default/%p
-    Type=notify
-    ExecStart=/usr/bin/etcd $DAEMON_ARGS
-    Restart=on-abnormal
-    LimitNOFILE=524288:524288
-
-    [Install]
-    WantedBy=multi-user.target
-
-- path: /etc/systemd/system/apisix-dashboard.service
-  generator: dump
-  mode: 0440
-  content: |-
-    [Unit]
-    Description=apisix-dashboard
-    #Conflicts=apisix-dashboard.service
-    After=network-online.target apisix.service
-
-    [Service]
-    WorkingDirectory=/usr/local/apisix-dashboard
-    ExecStart=/usr/local/apisix-dashboard/manager-api -c /usr/local/apisix-dashboard/conf/conf.yaml
-
-    [Install]
-    WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - jq
-    - git
-    - make
-    - nodejs
-    - yarn
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}
+repositories:
   - name: nodejs
     url: |-
-      deb http://deb.nodesource.com/node_16.x nodistro main
+      deb http://deb.nodesource.com/node_18.x nodistro main
     key: |-
       -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -346,88 +301,19 @@
       =e4wy
       -----END PGP PUBLIC KEY BLOCK-----
 
-  - name: apisix
-    url: |-
-      {% raw %}deb http://repos.apiseven.com/packages/debian {{image.release}} main{% endraw %} {# This will use the image.release varible from the distrobuilder #}
-    key: |-
-      -----BEGIN PGP PUBLIC KEY BLOCK-----
-
-      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
-      ZZnxLiifYpZHVbO3Vr1qrg0QPA==
-      =jnnH
-      -----END PGP PUBLIC KEY BLOCK-----
-{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+actions:
 - trigger: post-files
   pongo: true
   action: |-
     #!/bin/bash
     set -eux
 
-    mkdir -p /var/lib/etcd/default
-    ETCD_VERSION=$(curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')
-    wget https://github.com/etcd-io/etcd/releases/download/v${ETCD_VERSION}/etcd-v${ETCD_VERSION}-linux-amd64.tar.gz
-    tar -xvf etcd-v${ETCD_VERSION}-linux-amd64.tar.gz && \
-      cp etcd-v${ETCD_VERSION}-linux-amd64/{etcd,etcdctl} /usr/bin/
-    chmod 0644 etcd-v${ETCD_VERSION}-linux-amd64/{etcd,etcdctl}
-    cd ../ && rm -rf etcd-v${ETCD_VERSION}-linux-amd64*
+    git clone https://github.com/Fallenbagel/jellyseerr -b v{{ image.serial }} --depth 1 /opt/jellyseerr
+    cd /opt/jellyseerr
+    yarn global add node-gyp
+    CYPRESS_INSTALL_BINARY=0 yarn install --frozen-lockfile --network-timeout 1000000
+    yarn build
+    yarn install --production --ignore-scripts --prefer-offline
+    rm -rf src server .next/cache
 
-    apt update -y
-    {% raw %}apt install -y apisix={{image.serial}}-0{% endraw %} {# This will use the image.serial varible from the distrobuilder #}
-    apisix init
-
-    GO_VERSION=$(curl -sL --url  "https://golang.org/VERSION?m=text" | cut -d \t -f1)
-    wget https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz
-    rm -rf /usr/local/go && tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-
-    yarn config set "strict-ssl" false
-
-    DASHBOARD_VERSION=$(curl -s https://api.github.com/repos/apache/apisix-dashboard/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')
-    git clone -b v${DASHBOARD_VERSION} https://github.com/apache/apisix-dashboard.git --depth 1 && \
-      cd apisix-dashboard && make build
-    mkdir -p /usr/local/apisix-dashboard
-    cp -rf ./output/* /usr/local/apisix-dashboard/
-    cd ../ && rm -rf apisix-dashboard
-
-    systemctl enable etcd.service
-    systemctl enable apisix.service
-    systemctl enable apisix-dashboard.service
-{% endblock post_files %}
-{# *** End of configuration block *** #}
+    systemctl enable jellyseerr.service

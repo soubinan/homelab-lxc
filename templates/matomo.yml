@@ -1,6 +1,6 @@
-{% extends "./__debian_base.yml.j2" %}
-{# *** Enter your configuration bellow *** #}
-{% block dumps %}
+name: Matomo
+
+files:
 - path: /opt/certs/rootCA.config
   generator: dump
   content: |-
@@ -41,10 +41,10 @@
 
 - path: /var/matomo/init.sh
   generator: dump
-  mode: 0755
+  mode: '0755'
   content: |-
     #!/bin/bash
-{% raw %}
+
     sed -i "/'tables_prefix' => 'matomo_'/ r /var/matomo/re.php" /var/www/html/plugins/Installation/FormDatabaseSetup.php
     sed -i "/<h2>{{ 'Installation/ r /var/matomo/re.twig" /var/www/html/plugins/Installation/templates/databaseSetup.twig
     sed -i "s|File integrity check failed and reported some errors. You should fix this issue and then refresh this page until it shows no error.|File integrity check failed and reported some errors. But this is expected due to some changes done on DB the setup form default values during the LXC packaging. The expected modified files are: /var/www/html/lang/en.json, /var/www/html/plugins/Installation/FormDatabaseSetup.php and /var/www/html/plugins/Installation/templates/databaseSetup.twig|" /var/www/html/lang/en.json
@@ -53,7 +53,6 @@
     mysql -e "CREATE USER 'matomo_u'@'localhost';"
     mysql -e "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, DROP, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES ON matomo_db.* TO 'matomo_u'@'localhost';"
     mysql -e "GRANT FILE ON *.* TO 'matomo_u'@'localhost';"
-{% endraw %}
 
     a2enmod ssl
     a2ensite default-ssl
@@ -62,9 +61,8 @@
 
 - path: /var/matomo/re.twig
   generator: dump
-  mode: 0644
+  mode: '0644'
   content: |-
-
         <p style="background: #f5f4f1; padding: 5px;">
           You can use the pre-configured MySQL database below:<br>
           <strong>Database Server: 127.0.0.1, Database Name: matomo_db, Login: matomo_u</strong>
@@ -72,7 +70,7 @@
 
 - path: /var/matomo/re.php
   generator: dump
-  mode: 0644
+  mode: '0644'
   content: |-
                 'username' => 'matomo_u',
                 'password' => '',
@@ -80,7 +78,7 @@
 
 - path: /etc/systemd/system/matomo-init.service
   generator: dump
-  mode: 0440
+  mode: '0440'
   content: |-
     [Unit]
     Description=DB init for Matomo
@@ -95,26 +93,20 @@
 
     [Install]
     WantedBy=multi-user.target
-{% endblock dumps %}
-{# Set packages to be installed #}
-{% block packages %}
-  - packages:
-    - unzip
-    - php
-    - php-mysql
-    - php-curl
-    - php-cli
-    - php-gd
-    - php-xml
-    - php-mbstring
-    - libapache2-mod-php
-    - mariadb-server
-    action: install
-{% endblock packages %}
-{# Set required repositories for packages to be installed #}
-{% block repositories %}{% endblock repositories %}
-{# Scripts to be excuted after packages installation and all files has been copied #}
-{% block post_files %}
+
+packages:
+- unzip
+- php
+- php-mysql
+- php-curl
+- php-cli
+- php-gd
+- php-xml
+- php-mbstring
+- libapache2-mod-php
+- mariadb-server
+
+actions:
 - trigger: post-files
   pongo: true
   action: |-
@@ -123,7 +115,7 @@
 
     openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
 
-    {% raw %}wget -O /tmp/matomo.zip https://builds.matomo.org/matomo-{{image.serial}}.zip{% endraw %}
+    wget -O /tmp/matomo.zip https://builds.matomo.org/matomo-{{image.serial}}.zip
     unzip /tmp/matomo.zip -d /tmp
     rm -rf /var/www/html/*
     cp -r /tmp/matomo/* /var/www/html/
@@ -134,6 +126,3 @@
     systemctl enable matomo-init
     systemctl enable mariadb
     systemctl enable apache2
-
-{% endblock post_files %}
-{# *** End of configuration block *** #}

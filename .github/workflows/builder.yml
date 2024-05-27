@@ -48,13 +48,14 @@ on:
 
 jobs:
   image-build:
+    if: ${{inputs.app_version}} != "null" && ${{inputs.app_version}} != ""
     runs-on: ubuntu-latest
     steps:
       - name: Check submitted version
         id: version-check
         run: |
           SUBMITTED_BUILD_ID=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}
-          CHECKED_BUILD_ID=$(curl -sLX POST $HOMELAB_LXC_EP -H "Content-Type: application/json" -d '{"query":"query MyQuery { build(where: {buildId: \"${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}\"}) { buildId } }"}'| jq -r '.data.build.buildId')
+          CHECKED_BUILD_ID=$(curl -sLX POST $HOMELAB_LXC_EP -H "Content-Type: application/json" -d '{"query":"query CheckBuildID { build(where: {buildId: \"${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}\"}) { buildId } }"}'| jq -r '.data.build.buildId')
           echo "SUBMITTED_BUILD_ID=$SUBMITTED_BUILD_ID" >> $GITHUB_OUTPUT
           echo "CHECKED_BUILD_ID=$CHECKED_BUILD_ID" >> $GITHUB_OUTPUT
         env:
@@ -75,12 +76,14 @@ jobs:
           curl --silent --location https://github.com/Orange-OpenSource/hurl/releases/download/${HURL_VERSION}/hurl-${HURL_VERSION}-x86_64-unknown-linux-gnu.tar.gz | tar xvz -C /tmp
           sudo cp /tmp/hurl-${HURL_VERSION}-x86_64-unknown-linux-gnu/bin/* /usr/bin/
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
-          pip install jinja2-cli
+          sudo -v ; wget -q https://kcl-lang.io/script/install-cli.sh -O - | sudo bash
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
 
-      - name: Build Distrobuilder template
+      - name: Create Distrobuilder LXC template file
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
         run: |
-          jinja2 ${{github.workspace}}/${{inputs.config_path}} -D APP_NAME="${{ inputs.app_name }}" > ${{github.workspace}}/lxc-template.yml
+          yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ${{github.workspace}}/${{inputs.config_path}} > ${{github.workspace}}/${{inputs.config_path}}_repacked.yaml
+          kcl ${{github.workspace}}/templates/__debian_base.k -Y ${{github.workspace}}/${{inputs.config_path}}_repacked.yaml > ${{github.workspace}}/lxc-template.yml
 
       - name: Build Image
         if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')

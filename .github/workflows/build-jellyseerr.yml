@@ -35,7 +35,7 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/jellyseerr.yml.j2
+      config_path: templates/jellyseerr.yml
       app_name: jellyseerr
       app_version: ${{needs.init.outputs.app_version}}
       description: Open source software application for managing requests for your media library.
