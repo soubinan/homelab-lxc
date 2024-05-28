@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-jellyseerr.yml'
-      - 'templates/jellyseerr.yml.j2'
+      - 'templates/jellyseerr.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

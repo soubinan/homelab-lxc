@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-infisical.yml'
-      - 'templates/infisical.yml.j2'
+      - 'templates/infisical.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

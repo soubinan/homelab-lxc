@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-gitea.yml'
-      - 'templates/gitea.yml.j2'
+      - 'templates/gitea.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
