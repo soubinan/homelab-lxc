@@ -39,7 +39,7 @@ jobs:
       app_name: vault
       app_version: ${{needs.init.outputs.app_version}}
       description: Vault is a free and source-available secrets management tool / secrets store.
-      categories: Secret, Security
+      categories: Secrets management, Security
       project_source: https://github.com/hashicorp/vault
       distribution: debian
       release: bookworm
