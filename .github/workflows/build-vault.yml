@@ -1,4 +1,4 @@
-name: Build Jenkins LXC Image
+name: Build Vault LXC Image
 
 on:
   pull_request:
@@ -10,8 +10,8 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/build-jenkins.yml'
-      - 'templates/jenkins.yml'
+      - '.github/workflows/build-vault.yml'
+      - 'templates/vault.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
@@ -23,7 +23,7 @@ jobs:
       - name: Get Application version
         id: get-app-version
         run: |
-          echo "APP_VERSION=$(curl -Ls https://updates.jenkins.io/stable/latestCore.txt | sed -E 's/^v|V//')" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
     outputs:
       app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
 
@@ -35,12 +35,12 @@ jobs:
           - amd64
     uses: ./.github/workflows/builder.yml
     with:
-      config_path: templates/jenkins.yml
-      app_name: jenkins
+      config_path: templates/vault.yml
+      app_name: vault
       app_version: ${{needs.init.outputs.app_version}}
-      description: The leading open source automation server. Build great things at any scale.
-      categories: Automation, CI CD, Dev
-      project_source: https://github.com/jenkinsci/jenkins
+      description: Vault is a free and source-available secrets management tool / secrets store.
+      categories: Secret, Security
+      project_source: https://github.com/hashicorp/vault
       distribution: debian
       release: bookworm
       architecture: ${{matrix.architectures}}

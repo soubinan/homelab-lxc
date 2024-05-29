@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-matomo.yml'
-      - 'templates/matomo.yml.j2'
+      - 'templates/matomo.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

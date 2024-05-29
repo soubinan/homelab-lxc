@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-keycloak.yml'
-      - 'templates/keycloak.yml.j2'
+      - 'templates/keycloak.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

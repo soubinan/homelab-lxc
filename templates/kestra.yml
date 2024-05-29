@@ -1,0 +1,46 @@
+name: Kestra
+
+files:
+- path: /etc/systemd/system/kestra.service
+  generator: dump
+  mode: '0440'
+  content: |-
+    [Unit]
+    Description=Kestra
+    After=network.target
+
+    [Service]
+    Type = simple
+    WorkingDirectory=/opt/kestra
+    ExecStart=/opt/kestra/kestra server local --worker-thread 5
+    TimeoutSec = 15
+    Restart = on-failure
+
+    [Install]
+    WantedBy=multi-user.target
+
+packages:
+- git
+- unzip
+- openjdk-17-jdk
+
+actions:
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    curl -sL https://api.kestra.io/v1/versions/download -o /tmp/kestra.zip
+    cd /tmp
+    unzip /tmp/kestra.zip && rm /tmp/kestra.zip
+
+    mkdir -p /opt/kestra
+    cd /opt/kestra
+
+    curl -sL https://raw.githubusercontent.com/kestra-io/kestra/develop/.plugins | grep io.kestra | sed s,#,,g > ./plugins-list
+
+    mv /tmp/kestra* ./kestra && chmod +x ./kestra
+    for i in $(cat ./plugins-list); do ./kestra plugins install $i; done
+
+    systemctl enable kestra.service

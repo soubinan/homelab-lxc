@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-jupyterlab.yml'
-      - 'templates/jupyterlab.yml.j2'
+      - 'templates/jupyterlab.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

@@ -966,7 +966,7 @@ _welcome_msg_issue = """\
 Welcome on your {} LXC\n""".format(_app_name)
 _welcome_msg_cron = """\
 @reboot root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
-00,10,20,30,40,50 * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue"""
+* * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue"""
 _welcome_msg_script = """\
 #!/bin/bash
 

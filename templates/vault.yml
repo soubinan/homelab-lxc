@@ -1,0 +1,112 @@
+name: Vault
+
+files:
+- path: /opt/certs/rootCA.config
+  generator: dump
+  content: |-
+    [ req ]
+    default_md = sha256
+    prompt = no
+    req_extensions = req_ext
+    distinguished_name = req_distinguished_name
+
+    [ req_distinguished_name ]
+    countryName = CA
+    stateOrProvinceName = Quebec
+    localityName = Montreal
+    organizationName = SoubiLabs
+
+    [ req_ext ]
+    keyUsage=critical,digitalSignature,keyEncipherment
+    extendedKeyUsage=critical,serverAuth,clientAuth
+
+- path: /opt/certs/csr.config
+  generator: dump
+  content: |-
+    [ req ]
+    default_bits = 2048
+    prompt = no
+    default_md = sha256
+    req_extensions = req_ext
+    distinguished_name = dn
+
+    [ dn ]
+    C = CA
+    ST = Quebec
+    L = Montreal
+    O = SoubiLabs
+    OU = LXC-Images
+    CN = localhost
+
+    [ req_ext ]
+    subjectAltName = @alt_names
+
+    [ alt_names ]
+    DNS.1 = vault.lan
+
+- path: /opt/certs/crt.config
+  generator: dump
+  content: |-
+    authorityKeyIdentifier = keyid,issuer
+    basicConstraints = CA:FALSE
+    keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+    subjectAltName = @alt_names
+
+    [alt_names]
+    DNS.1 = vault.lan
+
+- path: /opt/vault/.config
+  generator: dump
+  content: |-
+    ui            = true
+    cluster_addr  = "https://127.0.0.1:8201"
+    api_addr      = "https://127.0.0.1:8200"
+    disable_mlock = true
+
+    storage "raft" {
+      path = "/opt/vault/data"
+      node_id = "vault01"
+    }
+
+    listener "tcp" {
+      address       = "0.0.0.0:8200"
+      tls_cert_file = "/etc/ssl/private/vault.crt"
+      tls_key_file  = "/etc/ssl/private/vault.key"
+    }
+
+- path: /etc/systemd/system/vault.service
+  generator: dump
+  mode: '0440'
+  content: |-
+    [Unit]
+    Description=Vault - Secret management
+    After=network.target
+
+    [Service]
+    Type=simple
+    PIDFile=/opt/vault/vault.pid
+    ExecStart=/usr/bin/vault server -config /opt/vault/.config
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+
+actions:
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
+    apt update && apt install vault
+
+    mkdir -p /opt/vault/data
+
+    openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+    openssl genrsa -out /etc/ssl/private/vault.key 2048
+    openssl req -new -key /etc/ssl/private/vault.key -out /etc/ssl/private/vault.csr -config /opt/certs/csr.config
+    openssl x509 -req -in /etc/ssl/private/vault.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/vault.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+
+    systemctl enable vault.service

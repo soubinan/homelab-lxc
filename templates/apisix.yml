@@ -76,11 +76,11 @@ files:
     WantedBy=multi-user.target
 
 packages:
-  - jq
-  - git
-  - make
-  - nodejs
-  - yarn
+- jq
+- git
+- make
+- nodejs
+- yarn
 
 repositories:
   - name: nodejs

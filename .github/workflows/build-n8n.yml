@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-n8n.yml'
-      - 'templates/n8n.yml.j2'
+      - 'templates/n8n.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

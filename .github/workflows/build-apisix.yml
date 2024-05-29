@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-apisix.yml'
-      - 'templates/apisix.yml.j2'
+      - 'templates/apisix.yml'
   schedule:
     - cron: '0 3 */1 * *'
 

@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-jellyfin.yml'
-      - 'templates/jellyfin.yml.j2'
+      - 'templates/jellyfin.yml'
   schedule:
     - cron: '0 3 */15 * *'
 

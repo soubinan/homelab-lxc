@@ -11,7 +11,7 @@ on:
       - main
     paths:
       - '.github/workflows/build-nextcloud.yml'
-      - 'templates/nextcloud.yml.j2'
+      - 'templates/nextcloud.yml'
   schedule:
     - cron: '0 3 */1 * *'
 
