@@ -13,7 +13,7 @@ on:
       - '.github/workflows/build-matomo.yml'
       - 'templates/matomo.yml'
   schedule:
-    - cron: '0 3 */1 * *'
+    - cron: '0 1 */1 * *'
 
 jobs:
   init:

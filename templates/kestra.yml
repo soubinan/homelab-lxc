@@ -20,9 +20,10 @@ files:
     WantedBy=multi-user.target
 
 packages:
+- build-essential
+- autoconf
 - git
 - unzip
-- openjdk-17-jdk
 
 actions:
 - trigger: post-files
@@ -31,11 +32,19 @@ actions:
     #!/bin/bash
     set -eux
 
+    curl https://download.java.net/java/GA/jdk22.0.1/c7ec1332f7bb44aeba2eb341ae18aca4/8/GPL/openjdk-22.0.1_linux-x64_bin.tar.gz -o /tmp/openjdk.tar.gz
     curl -sL https://api.kestra.io/v1/versions/download -o /tmp/kestra.zip
-    cd /tmp
-    unzip /tmp/kestra.zip && rm /tmp/kestra.zip
 
     mkdir -p /opt/kestra
+    mkdir -p /opt/jdk
+
+    cd /tmp
+
+    tar -zxf /tmp/openjdk.tar.gz -C /opt/jdk
+    unzip /tmp/kestra.zip && rm /tmp/kestra.zip
+
+    update-alternatives --install /usr/bin/java java /opt/jdk/jdk*/bin/java 100
+
     cd /opt/kestra
 
     curl -sL https://raw.githubusercontent.com/kestra-io/kestra/develop/.plugins | grep io.kestra | sed s,#,,g > ./plugins-list
