@@ -44,6 +44,9 @@ actions:
     unzip /tmp/kestra.zip && rm /tmp/kestra.zip
 
     update-alternatives --install /usr/bin/java java /opt/jdk/jdk*/bin/java 100
+    update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk*/bin/javac 100
+    update-alternatives --display java
+    update-alternatives --display javac
 
     cd /opt/kestra
 
