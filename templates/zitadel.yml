@@ -2,58 +2,16 @@ name: Zitadel
 
 files:
 - path: /opt/certs/rootCA.config
-  generator: dump
-  content: |-
-    [ req ]
-    default_md = sha256
-    prompt = no
-    req_extensions = req_ext
-    distinguished_name = req_distinguished_name
-
-    [ req_distinguished_name ]
-    countryName = CA
-    stateOrProvinceName = Quebec
-    localityName = Montreal
-    organizationName = SoubiLabs
-
-    [ req_ext ]
-    keyUsage=critical,digitalSignature,keyEncipherment
-    extendedKeyUsage=critical,serverAuth,clientAuth
+  generator: copy
+  source: assets/rootCA.config
 
 - path: /opt/certs/csr.config
-  generator: dump
-  content: |-
-    [ req ]
-    default_bits = 2048
-    prompt = no
-    default_md = sha256
-    req_extensions = req_ext
-    distinguished_name = dn
-
-    [ dn ]
-    C = CA
-    ST = Quebec
-    L = Montreal
-    O = SoubiLabs
-    OU = LXC-Images
-    CN = localhost
-
-    [ req_ext ]
-    subjectAltName = @alt_names
-
-    [ alt_names ]
-    DNS.1 = zitadel.lan
+  generator: copy
+  source: assets/csr.config
 
 - path: /opt/certs/crt.config
-  generator: dump
-  content: |-
-    authorityKeyIdentifier = keyid,issuer
-    basicConstraints = CA:FALSE
-    keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-    subjectAltName = @alt_names
-
-    [alt_names]
-    DNS.1 = zitadel.lan
+  generator: copy
+  source: assets/crt.config
 
 - path: /opt/zitadel/.config
   generator: dump

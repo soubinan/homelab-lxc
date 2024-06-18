@@ -2,3 +2,5 @@
 *.vars
 # ignore tarballs
 *.tar.*
+# ignore kclvm dir
+.kclvm
