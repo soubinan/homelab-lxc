@@ -2,23 +2,8 @@ name: NextCloud
 
 files:
 - path: /opt/certs/rootCA.config
-  generator: dump
-  content: |-
-    [ req ]
-    default_md = sha256
-    prompt = no
-    req_extensions = req_ext
-    distinguished_name = req_distinguished_name
-
-    [ req_distinguished_name ]
-    countryName = CA
-    stateOrProvinceName = Quebec
-    localityName = Montreal
-    organizationName = SoubiLabs
-
-    [ req_ext ]
-    keyUsage=critical,digitalSignature,keyEncipherment
-    extendedKeyUsage=critical,serverAuth,clientAuth
+  generator: copy
+  source: assets/rootCA.config
 
 - path: /opt/ssl.conf
   generator: dump
