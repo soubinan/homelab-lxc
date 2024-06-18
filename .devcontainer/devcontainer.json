@@ -2,12 +2,25 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
 	"name": "template_builder",
-	"image": "mcr.microsoft.com/devcontainers/base:dev-debian",
-	"postCreateCommand": "apt update && apt install -y wget && wget -q https://kcl-lang.io/script/install-cli.sh -O - | bash && wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	// "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+	// "mounts": [
+	//   "source=/run/user/1000/podman/podman.sock,target=/var/run/docker.sock,type=bind,consistency=cached"
+	// ]
 	"remoteUser": "root",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/homelab-lxc,type=bind,consistency=cached,Z=true",
 	"workspaceFolder": "/workspace/homelab-lxc",
-	"mounts": [
-	  "source=/run/user/1000/podman/podman.sock,target=/var/run/docker.sock,type=bind,consistency=cached"
-	]
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.vscode-pull-request-github",
+				"eamodio.gitlens",
+				"kcl.kcl-vscode-extension",
+				"redhat.vscode-yaml",
+				"stateful.runme"
+			]
+		}
+	}
 }
