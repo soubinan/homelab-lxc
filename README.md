@@ -24,8 +24,10 @@ Open an issue to submit the application details and we will try to add it as soo
 It is very straight forward to add a new build template:
 
 - Create a distrobuilder template
-    - check the `templates/` directory to see some examples of already existing builds
-    - check the [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) docs about how to use the keys `files` and `actions`
+
+   - check the `templates/` directory to see some examples of already existing builds
+   - check the [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) docs about how to use the keys `files` and `actions`
+
 - Create a job to build the LXC image (check the `.github/workflows/` to see some examples of already existing builds)
 
 ### Local test
@@ -54,7 +56,8 @@ ls -lash ./_lxc-template.yml
 
 Check the content of `_lxc-template` file to verify all is as expected. It should contains the conplete configuration (based on `./templates/__debian_base.k`)
 
-```sh {"excludeFromRunAll":"true","id":"01J0MPGBG024BTJHTE54YMJP97"}
+```sh {"excludeFromRunAll":"false","id":"01J0MPGBG024BTJHTE54YMJP97"}
 # Build your LXC image
-read -p "Enter the application version to build: " version && sudo distrobuilder build-lxc ./templates/_lxc-template.yml -o image.architecture=amd64 -o image.release=bookworm -o image.serial="${version}" -o source.url="http://ftp.us.debian.org/debian"
+# Do not work if exected into a container
+read -p "Enter the application version to build: " version && distrobuilder build-lxc _lxc-template.yml -o image.architecture=amd64 -o image.release=bookworm -o image.serial="${version}" -o source.url="http://ftp.us.debian.org/debian"
 ```
