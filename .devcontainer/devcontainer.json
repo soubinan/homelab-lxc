@@ -1,26 +1,22 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "template_builder",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-	// "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
-	// "mounts": [
-	//   "source=/run/user/1000/podman/podman.sock,target=/var/run/docker.sock,type=bind,consistency=cached"
-	// ]
-	"remoteUser": "root",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace/homelab-lxc,type=bind,consistency=cached,Z=true",
-	"workspaceFolder": "/workspace/homelab-lxc",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"GitHub.vscode-pull-request-github",
-				"eamodio.gitlens",
-				"kcl.kcl-vscode-extension",
-				"redhat.vscode-yaml",
-				"stateful.runme"
-			]
-		}
-	}
+  "name": "template_builder",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "root",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/homelab-lxc,type=bind,consistency=cached,Z=true",
+  "workspaceFolder": "/workspace/homelab-lxc",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "kcl.kcl-vscode-extension",
+        "redhat.vscode-yaml",
+        "stateful.runme"
+      ]
+    }
+  }
 }
