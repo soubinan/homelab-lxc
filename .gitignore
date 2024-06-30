@@ -4,3 +4,5 @@
 *.tar.*
 # ignore kclvm dir
 .kclvm
+# ignore test generation
+_lxc*
