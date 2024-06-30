@@ -44,7 +44,7 @@ It is very straight forward to add a new build template:
 
 ```sh {"id":"01J0MNYBZ7PPTE87YJCNJPC101"}
 # Your template should be in the ./templates directory
-read -p "Your template filename: " filename && yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ./templates/${filename} > _lxc-partial.yml && echo "_lxc-partial.yml has been successfully generated !"
+read -p "Your template filepath (ie. ./templates/myapp.yml): " templatepath && yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ./templates/${templatepath} > _lxc-partial.yml && echo "_lxc-partial.yml has been successfully generated !"
 ls -lash ./_lxc-partial.yml
 ```
 
