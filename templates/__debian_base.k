@@ -1194,6 +1194,7 @@ packages = {
             packages = [
                 "fuse"
                 "openssh-server"
+                "lsb-release"
                 "openssl"
                 "cloud-init"
                 "curl"
