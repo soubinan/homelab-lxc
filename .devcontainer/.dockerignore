@@ -1,0 +1,8 @@
+# ignore vars files
+*.vars
+# ignore tarballs
+*.tar.*
+# ignore kclvm dir
+.kclvm
+# ignore test generation
+_lxc*
