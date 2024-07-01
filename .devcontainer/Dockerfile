@@ -14,6 +14,7 @@ RUN apt-get update && apt-get upgrade -y && \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q https://kcl-lang.io/script/install-cli.sh -O - | bash && \
+    wget -q https://kcl-lang.io/script/install-kcl-lsp.sh -O - | bash && \
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
     chmod +x /usr/bin/yq
 
