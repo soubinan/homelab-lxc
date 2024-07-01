@@ -39,6 +39,7 @@ It is very straight forward to add a new build template:
 - [Install yq](https://mikefarah.gitbook.io/yq#install)
 
 [Step 2] Create your LXC template (checck the `templates/` directory to see the already existing examples)
+> Note: the base template already has some packages in its definition so you don't need to add them twice, those packages are: fuse, openssh-server, lsb-release, openssl, cloud-init, curl, wget, gpg, vim
 
 [ Step 3] Run the following commands
 
