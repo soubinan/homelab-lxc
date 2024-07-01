@@ -1,0 +1,12 @@
+name: AdGuard
+
+actions:
+- trigger: post-files
+  pongo: true
+  action: |-
+    #!/bin/bash
+    set -eux
+
+    curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -v
+
+    systemctl enable AdGuardHome.service
