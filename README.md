@@ -23,10 +23,10 @@ Open an issue to submit the application details and we will try to add it as soo
 
 It is very straight forward to add a new build template:
 
-- Create a distrobuilder template
+- Create a [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) template
 
-   - check the `templates/` directory to see some examples of already existing builds
-   - check the [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) docs about how to use the keys `files` and `actions`
+   - check the `templates/` directory to see some examples of already existing builds (you can take the template `templates/apisix.yml` as a solid example).
+   - check the [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) docs about how to use the keys `files` and `actions` to see all possibilities available to you. Only both are using [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) directly. Other keys like `repositories` and `packages` are preprocessed before to be used by [distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/) but are pretty easy to use.
 
 - Create a job to build the LXC image (check the `.github/workflows/` to see some examples of already existing builds)
 
@@ -39,13 +39,15 @@ It is very straight forward to add a new build template:
 - [Install yq](https://mikefarah.gitbook.io/yq#install)
 
 [Step 2] Create your LXC template (checck the `templates/` directory to see the already existing examples)
+
 > Note: the base template already has some packages in its definition so you don't need to add them twice, those packages are: fuse, openssh-server, lsb-release, openssl, cloud-init, curl, wget, gpg, vim
 
 [ Step 3] Run the following commands
 
 ```sh {"id":"01J0MNYBZ7PPTE87YJCNJPC101"}
 # Your template should be in the ./templates directory
-read -p "Your template filename (ie. myapp.yml): " template_file && yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ./templates/${template_file} > _lxc-partial.yml && echo "_lxc-partial.yml has been successfully generated !"
+# Uses myapp.yml as default value. This file do not really exists!
+read -p "Your template filename [myapp.yml]: " template_file && yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ./templates/${template_file:-'myapp.yml'} > _lxc-partial.yml && echo "_lxc-partial.yml has been successfully generated !"
 ls -lash ./_lxc-partial.yml
 ```
 
@@ -60,5 +62,7 @@ Check the content of `_lxc-template` file to verify all is as expected. It shoul
 ```sh {"excludeFromRunAll":"false","id":"01J0MPGBG024BTJHTE54YMJP97"}
 # Build your LXC image
 # Do not work if exected into a container
-read -p "Enter the application version to build: " version && distrobuilder build-lxc _lxc-template.yml -o image.architecture=amd64 -o image.release=bookworm -o image.serial="${version}" -o source.url="http://ftp.us.debian.org/debian"
+# Uses 1.0.0 as default value
+# This will raise an error if you use the image.serial variable in your template while your application do not have any 1.0.0 version
+read -p "Enter the application version to build [1.0.0]: " version && distrobuilder build-lxc _lxc-template.yml -o image.architecture=amd64 -o image.release=bookworm -o image.serial="${version:-'1.0.0'}" -o source.url="http://ftp.us.debian.org/debian"
 ```
