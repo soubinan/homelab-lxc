@@ -25,7 +25,6 @@ files:
     WantedBy=multi-user.target
 
 packages:
-- ca-certificates
 - git
 - nodejs
 
