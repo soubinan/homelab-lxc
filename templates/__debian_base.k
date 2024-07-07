@@ -1196,6 +1196,7 @@ packages = {
                 "openssh-server"
                 "lsb-release"
                 "openssl"
+                "ca-certificates"
                 "cloud-init"
                 "curl"
                 "wget"

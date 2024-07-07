@@ -1,7 +1,6 @@
 name: BunkerWeb
 
 packages:
-- ca-certificates
 - gnupg2
 - debian-archive-keyring
 
