@@ -42,7 +42,7 @@ jobs:
       categories: WAF, Security
       project_source: https://github.com/bunkerity/bunkerweb
       distribution: debian
-      release: bullseye
+      release: bookworm
       architecture: ${{matrix.architectures}}
       branch_name: ${{github.event.pull_request.base.ref}}
       is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
