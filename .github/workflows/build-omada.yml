@@ -44,7 +44,7 @@ jobs:
       categories: SDN, Networks
       project_source: https://www.tp-link.com/en/support/download/omada-software-controller
       distribution: debian
-      release: bookworm
+      release: buster
       architecture: ${{matrix.architectures}}
       branch_name: ${{github.event.pull_request.base.ref}}
       is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
