@@ -1,0 +1,51 @@
+name: Build Omada LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-omada.yml'
+      - 'templates/omada.yml'
+  schedule:
+    - cron: '0 1 */1 * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(echo $(curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1) |grep -oE "v[0-9]+.[0-9]+.[0-9]+"| sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/omada.yml
+      app_name: omada
+      app_version: ${{needs.init.outputs.app_version}}
+      description: |
+        Omada SDN Controller Solution offers centralized and efficient management for configuring enterprise
+        networks comprised of security gateways, switches, and wireless access points.
+      categories: SDN, Networks
+      project_source: https://www.tp-link.com/en/support/download/omada-software-controller
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit
