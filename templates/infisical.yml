@@ -89,8 +89,6 @@ files:
     WantedBy=multi-user.target
 
 packages:
-- software-properties-common
-- apt-transport-https
 - git
 - nodejs
 - redis

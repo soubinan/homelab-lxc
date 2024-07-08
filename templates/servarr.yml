@@ -179,7 +179,6 @@ files:
     WantedBy=multi-user.target
 
 packages:
-- software-properties-common
 - git
 - sqlite3
 - python3-pip
