@@ -1,9 +1,5 @@
 name: Grafana
 
-packages:
-- apt-transport-https
-- software-properties-common
-
 actions:
 - trigger: post-files
   pongo: true

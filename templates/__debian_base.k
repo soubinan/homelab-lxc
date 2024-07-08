@@ -998,7 +998,8 @@ printf '\\n'"""
 _debian_repositories = """\
 deb http://deb.debian.org/debian {{ image.release }} main non-free non-free-firmware bookworm-backports contrib
 deb http://deb.debian.org/debian {{ image.release }}-updates main non-free non-free-firmware bookworm-backports contrib
-deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware bookworm-backports contrib"""
+{% if image.release != 'sid' and image.release != 'buster' %}deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware bookworm-backports contrib{% endif %}
+{% if image.release == 'buster' %}deb http://deb.debian.org/debian-security/ {{ image.release }}/updates main non-free non-free-firmware bookworm-backports contrib{% endif %}"""
 _script_set_resolvconf = """\
 #!/bin/bash
 set -eux
@@ -1197,11 +1198,13 @@ packages = {
                 "lsb-release"
                 "openssl"
                 "ca-certificates"
+                "apt-transport-https"
                 "cloud-init"
                 "curl"
                 "wget"
                 "gpg"
                 "vim"
+                "software-properties-common"
             ]
             action = "install"
         }
@@ -1225,7 +1228,10 @@ actions = [
     {
         trigger = "post-packages"
         action = _script_enable_resolved
-        releases = ["bookworm"]
+        releases = [
+            "bookworm",
+            "trixie",
+        ]
     }
     {
         trigger = "post-packages"
