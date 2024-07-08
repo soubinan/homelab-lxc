@@ -59,7 +59,7 @@ ls -lash ./_lxc-template.yml
 
 Check the content of `_lxc-template` file to verify all is as expected. It should contains the conplete configuration (based on `./templates/__debian_base.k`)
 
-```sh {"excludeFromRunAll":"false","id":"01J0MPGBG024BTJHTE54YMJP97"}
+```sh {"excludeFromRunAll":"true","id":"01J0MPGBG024BTJHTE54YMJP97"}
 # Build your LXC image
 # Do not work if exected into a container
 # Uses 1.0.0 as default value
