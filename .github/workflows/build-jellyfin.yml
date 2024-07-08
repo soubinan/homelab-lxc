@@ -39,7 +39,7 @@ jobs:
       app_name: jellyfin
       app_version: ${{needs.init.outputs.app_version}}
       description: A Free Software Media System to collect, manage, and stream your media.
-      categories: Media, Streaming
+      categories: Media management, Streaming
       project_source: https://github.com/jellyfin/jellyfin
       distribution: debian
       release: bookworm
