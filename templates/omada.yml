@@ -26,7 +26,6 @@ files:
 
 packages:
 - jsvc
-- gnupg
 - nvidia-openjdk-8-jre
 - libssl-dev
 
@@ -44,3 +43,5 @@ actions:
 
     wget -qL $(curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1)
     apt install -fy ./*Omada_SDN_Controller*.deb
+
+    systemctl enable mongod.service
