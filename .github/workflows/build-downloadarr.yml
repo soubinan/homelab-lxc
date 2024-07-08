@@ -1,0 +1,49 @@
+name: Build DownloadARR LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-downloadarr.yml'
+      - 'templates/downloadarr.yml'
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(date +%Y-%m)" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/downloadarr.yml
+      app_name: downloadarr
+      app_version: ${{needs.init.outputs.app_version}}
+      description: Downloadarr is the collection of three tools (QBitTorrent, SabNZBd and FlareSolverr) for Usenet and BitTorrent users.
+      categories: Torrent, Usenet
+      project_source: https://wiki.servarr.com
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit

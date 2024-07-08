@@ -1,0 +1,49 @@
+name: Build ReadARR LXC Image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-readarr.yml'
+      - 'templates/readarr.yml'
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  init:
+    if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Application version
+        id: get-app-version
+        run: |
+          echo "APP_VERSION=$(curl -s https://api.github.com/repos/Readarr/Readarr/releases/latest | jq -r '.tag_name' | sed -E 's/^v|V|.+@//')" >> $GITHUB_OUTPUT
+    outputs:
+      app_version: ${{steps.get-app-version.outputs.APP_VERSION}}
+
+  image-build:
+    needs: init
+    strategy:
+      matrix:
+        architectures:
+          - amd64
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: templates/readarr.yml
+      app_name: readarr
+      app_version: ${{needs.init.outputs.app_version}}
+      description: Readarr is an eBook and audiobook collection manager for Usenet and BitTorrent users.
+      categories: Media management
+      project_source: https://wiki.servarr.com/readarr
+      distribution: debian
+      release: bookworm
+      architecture: ${{matrix.architectures}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit
