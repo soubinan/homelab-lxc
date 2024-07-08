@@ -1249,7 +1249,10 @@ actions = [
     {
         trigger = "post-files"
         action = _script_reset_resolvconf_old
-        releases = ["bullseye"]
+        releases = [
+            "bullseye",
+            "buster"
+        ]
     }
 ]
 mappings = {architecture_map = "debian"}
