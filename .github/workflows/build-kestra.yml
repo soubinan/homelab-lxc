@@ -39,7 +39,7 @@ jobs:
       app_name: kestra
       app_version: ${{needs.init.outputs.app_version}}
       description: Kestra is a free and open-source workflow orchestrator and automation tool.
-      categories: Automation, Workflows
+      categories: Automation, Orchestration
       project_source: https://github.com/kestra-io/kestra
       distribution: debian
       release: bookworm

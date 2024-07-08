@@ -39,7 +39,7 @@ jobs:
       app_name: servarr
       app_version: ${{needs.init.outputs.app_version}}
       description: Media organizer/manager stack (ARR) for usenet and torrent users. This stack includes QBitTorrent, SABnzbd, FlareSolverr, Bazarr and the ARR stack.
-      categories: Movies, TV, Torrent
+      categories: Media management
       project_source: https://wiki.servarr.com
       distribution: debian
       release: bookworm
