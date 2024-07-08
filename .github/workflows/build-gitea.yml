@@ -13,7 +13,7 @@ on:
       - '.github/workflows/build-gitea.yml'
       - 'templates/gitea.yml'
   schedule:
-    - cron: '0 2 */1 * *'
+    - cron: '0 2 * * *'
 
 jobs:
   init:
