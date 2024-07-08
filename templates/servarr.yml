@@ -106,23 +106,6 @@ files:
     Restart=on-failure
     [Install]
     WantedBy=multi-user.target
-- path: /etc/systemd/system/flaresolverr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=FlareSolverr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=flaresolverr
-    Group=media
-    Type=simple
-    ExecStart=/opt/FlareSolverr/venv/bin/python -u /opt/FlareSolverr/src/flaresolverr.py
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
 
 - path: /etc/systemd/system/bazarr.service
   generator: dump
@@ -136,6 +119,24 @@ files:
     Group=media
     Type=simple
     ExecStart=/opt/bazarr/venv/bin/python -u /opt/bazarr/bazarr.py
+    TimeoutStopSec=20
+    KillMode=process
+    Restart=on-failure
+    [Install]
+    WantedBy=multi-user.target
+
+- path: /etc/systemd/system/flaresolverr.service
+  generator: dump
+  mode: '0440'
+  content: |-
+    [Unit]
+    Description=FlareSolverr Daemon
+    After=syslog.target network.target
+    [Service]
+    User=flaresolverr
+    Group=media
+    Type=simple
+    ExecStart=/opt/FlareSolverr/venv/bin/python -u /opt/FlareSolverr/src/flaresolverr.py
     TimeoutStopSec=20
     KillMode=process
     Restart=on-failure
@@ -263,6 +264,18 @@ actions:
     systemctl enable whisparr.service
     rm -rf *.tar.gz
 
+    mkdir /opt/bazarr
+    useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
+    usermod -aG media bazarr
+    wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
+    unzip /opt/bazarr.zip -d /opt/bazarr
+    cd /opt/bazarr
+    python3 -m venv venv
+    /opt/bazarr/venv/bin/python -m pip install -r requirements.txt
+    chown -R bazarr:bazarr /opt/bazarr
+    systemctl enable bazarr.service
+    rm -rf /opt/*.zip
+
     mkdir -p /tmp/{libgl1-mesa-dri,adwaita-icon-theme} /pkgs 
     cd /tmp/libgl1-mesa-dri
     equivs-control libgl1-mesa-dri
@@ -290,18 +303,6 @@ actions:
     rm -f /usr/lib/x86_64-linux-gnu/libmfxhw*
     rm -f /usr/lib/x86_64-linux-gnu/mfx/*
     rm -rf /pkgs
-
-    mkdir /opt/bazarr
-    useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
-    usermod -aG media bazarr
-    wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
-    unzip /opt/bazarr.zip -d /opt/bazarr
-    cd /opt/bazarr
-    python3 -m venv venv
-    /opt/bazarr/venv/bin/python -m pip install -r requirements.txt
-    chown -R bazarr:bazarr /opt/bazarr
-    systemctl enable bazarr.service
-    rm -rf /opt/*.zip
 
     useradd -m --home-dir /opt/qbittorrent qbittorrent
     usermod -aG media qbittorrent
