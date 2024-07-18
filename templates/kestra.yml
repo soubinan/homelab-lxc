@@ -53,6 +53,6 @@ actions:
     curl -sL https://raw.githubusercontent.com/kestra-io/kestra/develop/.plugins | grep io.kestra | sed s,#,,g > ./plugins-list
 
     mv /tmp/kestra* ./kestra && chmod +x ./kestra
-    for i in $(cat ./plugins-list); do ./kestra plugins install $i; done
+    for i in $(cat ./plugins-list); do echo "Install: $i" && ./kestra plugins install $i && echo "Done" || echo "Failed"; done
 
     systemctl enable kestra.service
