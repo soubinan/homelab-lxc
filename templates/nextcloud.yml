@@ -1,159 +1,168 @@
-name: NextCloud
+metadata:
+  name: NextCloud
+  get_version_command: curl -s https://api.github.com/repos/nextcloud/server/releases/latest | jq -r '.tag_name'
+  description: Fully open-source, on-premises content collaboration platform.
+  categories: Personal Cloud, Data Privacy
+  project_source: https://github.com/nextcloud/server
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /opt/certs/rootCA.config
+      generator: copy
+      source: assets/rootCA.config
 
-files:
-- path: /opt/certs/rootCA.config
-  generator: copy
-  source: assets/rootCA.config
+    - path: /opt/ssl.conf
+      generator: dump
+      content: |-
+        <VirtualHost *:443>
+                ServerAdmin webmaster@localhost
 
-- path: /opt/ssl.conf
-  generator: dump
-  content: |-
-    <VirtualHost *:443>
-            ServerAdmin webmaster@localhost
+                DocumentRoot /var/www/html
 
-            DocumentRoot /var/www/html
+                ErrorLog ${APACHE_LOG_DIR}/error.log
+                CustomLog ${APACHE_LOG_DIR}/access.log combined
+                SSLEngine on
 
-            ErrorLog ${APACHE_LOG_DIR}/error.log
-            CustomLog ${APACHE_LOG_DIR}/access.log combined
-            SSLEngine on
+                SSLCertificateFile      /etc/ssl/certs/rootCA.crt
+                SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
 
-            SSLCertificateFile      /etc/ssl/certs/rootCA.crt
-            SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
+                <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
+                        SSLOptions +StdEnvVars
+                </FilesMatch>
 
-            <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
-                    SSLOptions +StdEnvVars
-            </FilesMatch>
+                <Directory /usr/lib/cgi-bin>
+                        SSLOptions +StdEnvVars
+                </Directory>
+                <Directory "/var/www">
+                        Options MultiViews FollowSymlinks
+                        Order allow,deny
+                        Allow from all
+                        AllowOverride All
+                </Directory>
+                <Directory "/var/www/data">
+                        Deny from all
+                </Directory>
 
-            <Directory /usr/lib/cgi-bin>
-                    SSLOptions +StdEnvVars
-            </Directory>
-            <Directory "/var/www">
-                    Options MultiViews FollowSymlinks
-                    Order allow,deny
-                    Allow from all
-                    AllowOverride All
-            </Directory>
-            <Directory "/var/www/data">
-                    Deny from all
-            </Directory>
+                <IfModule mod_headers.c>
+                        Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
+                </IfModule>
+        </VirtualHost>
 
-            <IfModule mod_headers.c>
-                    Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
-            </IfModule>
-    </VirtualHost>
+    - path: /etc/systemd/system/nextcloud-init.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=DB init for NextCloud
+        After=network.target mariadb.service apache2.service
+        ConditionPathExists=!/var/nextcloud/.initialized__
 
-- path: /etc/systemd/system/nextcloud-init.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=DB init for NextCloud
-    After=network.target mariadb.service apache2.service
-    ConditionPathExists=!/var/nextcloud/.initialized__
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/var/nextcloud/init.sh
 
-    [Service]
-    Type=oneshot
-    RemainAfterExit=yes
-    ExecStart=/var/nextcloud/init.sh
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/nextcloud-optimize.timer
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Run perf optimization for NextCloud periodically
 
-- path: /etc/systemd/system/nextcloud-optimize.timer
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Run perf optimization for NextCloud periodically
+        [Timer]
+        Unit=nextcloud-optimize.service
+        OnCalendar=*-*-* *:*:00,30
 
-    [Timer]
-    Unit=nextcloud-optimize.service
-    OnCalendar=*-*-* *:*:00,30
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/nextcloud-optimize.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Perf optimization for NextCloud
+        After=network.target mariadb.service apache2.service
+        ConditionPathExists=/var/www/html/config/config.php
+        ConditionPathExists=!/var/nextcloud/.optimized__
 
-- path: /etc/systemd/system/nextcloud-optimize.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Perf optimization for NextCloud
-    After=network.target mariadb.service apache2.service
-    ConditionPathExists=/var/www/html/config/config.php
-    ConditionPathExists=!/var/nextcloud/.optimized__
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.locking' => '\\\\OC\\\\Memcache\\\\Redis'," /var/www/html/config/config.php
+        ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.local' => '\\\\OC\\\\Memcache\\\\APCu'," /var/www/html/config/config.php
+        ExecStart=/usr/bin/chmod 660 /var/www/html/config/config.php
+        ExecStart=/usr/bin/chown root:www-data /var/www/html/config/config.php
+        ExecStart=/usr/bin/touch /var/nextcloud/.optimized__
 
-    [Service]
-    Type=oneshot
-    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.locking' => '\\\\OC\\\\Memcache\\\\Redis'," /var/www/html/config/config.php
-    ExecStart=/usr/bin/sed -i "/'instanceid' => '/ a 'memcache.local' => '\\\\OC\\\\Memcache\\\\APCu'," /var/www/html/config/config.php
-    ExecStart=/usr/bin/chmod 660 /var/www/html/config/config.php
-    ExecStart=/usr/bin/chown root:www-data /var/www/html/config/config.php
-    ExecStart=/usr/bin/touch /var/nextcloud/.optimized__
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  packages:
+    - unzip
+    - mariadb-server
+    - redis
+    - php
+    - php-common
+    - php-cli
+    - php-mysql
+    - php-redis
+    - php-imagick
+    - php-curl
+    - php-zip
+    - php-xml
+    - php-apcu
+    - php-gd
+    - php-gmp
+    - php-intl
+    - php-mbstring
+    - php-bcmath
+    - libapache2-mod-php
 
-packages:
-- unzip
-- mariadb-server
-- redis
-- php
-- php-common
-- php-cli
-- php-mysql
-- php-redis
-- php-imagick
-- php-curl
-- php-zip
-- php-xml
-- php-apcu
-- php-gd
-- php-gmp
-- php-intl
-- php-mbstring
-- php-bcmath
-- libapache2-mod-php
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
 
-    openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+        wget -O /tmp/nextcloud.zip https://download.nextcloud.com/server/releases/nextcloud-{{image.serial}}.zip
+        unzip /tmp/nextcloud.zip -d /tmp
+        rm -rf /var/www/html
+        cp -r /tmp/nextcloud /var/www/html
+        mkdir -p /var/www/html/data
+        chown www-data: -R /var/www/
 
-    wget -O /tmp/nextcloud.zip https://download.nextcloud.com/server/releases/nextcloud-{{image.serial}}.zip
-    unzip /tmp/nextcloud.zip -d /tmp
-    rm -rf /var/www/html
-    cp -r /tmp/nextcloud /var/www/html
-    mkdir -p /var/www/html/data
-    chown www-data: -R /var/www/
+        cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
 
-    cp /opt/ssl.conf /etc/apache2/sites-available/default-ssl.conf
+        PHP_VERSION=$(php -v|grep cli|awk '{print $2}'|cut -d . -f1-2)
 
-    PHP_VERSION=$(php -v|grep cli|awk '{print $2}'|cut -d . -f1-2)
+        sed -iE "s|^output_buffering.*|output_buffering = Off|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^memory_limit.*|memory_limit = 512M|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^upload_max_filesize.*|upload_max_filesize = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^max_file_uploads.*|max_file_uploads = 100|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^max_execution_time.*|max_execution_time = 360|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^post_max_size.*|post_max_size = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;date.timezone.*|date.timezone = UTC|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.enable.*|opcache.enable = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.interned_strings_buffer.*|opcache.interned_strings_buffer = 16|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.max_accelerated_files.*|opcache.max_accelerated_files = 10000|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.memory_consumption.*|opcache.memory_consumption = 128|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.save_comments.*|opcache.save_comments = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|^;opcache.revalidate_freq.*|opcache.revalidate_freq = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
 
-    sed -iE "s|^output_buffering.*|output_buffering = Off|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^memory_limit.*|memory_limit = 512M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^upload_max_filesize.*|upload_max_filesize = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^max_file_uploads.*|max_file_uploads = 100|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^max_execution_time.*|max_execution_time = 360|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^post_max_size.*|post_max_size = 256M|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;date.timezone.*|date.timezone = UTC|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.enable.*|opcache.enable = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.interned_strings_buffer.*|opcache.interned_strings_buffer = 16|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.max_accelerated_files.*|opcache.max_accelerated_files = 10000|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.memory_consumption.*|opcache.memory_consumption = 128|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.save_comments.*|opcache.save_comments = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
-    sed -iE "s|^;opcache.revalidate_freq.*|opcache.revalidate_freq = 1|" /etc/php/$PHP_VERSION/apache2/php.ini
+        sed -iE "s|'dbname' => '',|'dbname' => 'nextcloud_db',|" /var/www/html/core/Controller/SetupController.php
+        sed -iE "s|'dbuser' => '',|'dbuser' => 'nextcloud_u',|" /var/www/html/core/Controller/SetupController.php
 
-    sed -iE "s|'dbname' => '',|'dbname' => 'nextcloud_db',|" /var/www/html/core/Controller/SetupController.php
-    sed -iE "s|'dbuser' => '',|'dbuser' => 'nextcloud_u',|" /var/www/html/core/Controller/SetupController.php
-
-    systemctl enable mariadb
-    systemctl enable redis-server
-    systemctl enable apache2
-    systemctl enable nextcloud-init
-    systemctl enable nextcloud-optimize.timer
+        systemctl enable mariadb
+        systemctl enable redis-server
+        systemctl enable apache2
+        systemctl enable nextcloud-init
+        systemctl enable nextcloud-optimize.timer

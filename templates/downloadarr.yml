@@ -1,120 +1,131 @@
-files:
-- path: /etc/systemd/system/flaresolverr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=FlareSolverr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=flaresolverr
-    Group=media
-    Type=simple
-    ExecStart=/opt/FlareSolverr/venv/bin/python -u /opt/FlareSolverr/src/flaresolverr.py
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+metadata:
+  name: Downloadarr
+  get_version_command: date +%Y-%m
+  description: Downloadarr is the collection of three tools (QBitTorrent, SabNZBd and FlareSolverr) for Usenet and BitTorrent users.
+  categories: Torrent, Usenet
+  project_source: https://wiki.servarr.com
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/flaresolverr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=FlareSolverr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=flaresolverr
+        Group=media
+        Type=simple
+        ExecStart=/opt/FlareSolverr/venv/bin/python3 -u /opt/FlareSolverr/src/flaresolverr.py
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/qbittorrent.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=QBitTorrent Daemon
-    After=syslog.target network.target
-    [Service]
-    User=qbittorrent
-    Group=media
-    Type=simple
-    ExecStart=/usr/bin/qbittorrent-nox --first-and-last --skip-dialog=true
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/qbittorrent.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=QBitTorrent Daemon
+        After=syslog.target network.target
+        [Service]
+        User=qbittorrent
+        Group=media
+        Type=simple
+        ExecStart=/usr/bin/qbittorrent-nox --first-and-last --skip-dialog=true
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/sabnzbdplus.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=SABnzbdplus Daemon
-    After=syslog.target network.target
-    [Service]
-    User=sabnzbdplus
-    Group=media
-    Type=simple
-    ExecStart=/usr/bin/sabnzbdplus -s 0.0.0.0:8081
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/sabnzbdplus.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=SABnzbdplus Daemon
+        After=syslog.target network.target
+        [Service]
+        User=sabnzbdplus
+        Group=media
+        Type=simple
+        ExecStart=/usr/bin/sabnzbdplus -s 0.0.0.0:8081
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-packages:
-- git
-- sqlite3
-- python3-pip
-- python3-venv
-- python3-distutils
-- python3-dev
-- equivs
-- 7zip
-- unrar-free
-- unzip
-- qbittorrent-nox
-- sabnzbdplus
+  packages:
+    - git
+    - sqlite3
+    - python3-pip
+    - python3-venv
+    - python3-distutils
+    - python3-dev
+    - equivs
+    - 7zip
+    - unrar-free
+    - unzip
+    - qbittorrent-nox
+    - sabnzbdplus
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-    export ARCH={{ image.architecture }}
-    if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
 
-    mkdir /downloads
-    groupadd media
-    chown -R :media /downloads
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
 
-    cd /opt
+        cd /opt
 
-    mkdir -p /tmp/{libgl1-mesa-dri,adwaita-icon-theme} /pkgs 
-    cd /tmp/libgl1-mesa-dri
-    equivs-control libgl1-mesa-dri
-    printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libgl1-mesa-dri\nVersion: 99.0.0\nDescription: Dummy package for libgl1-mesa-dri\n' >> libgl1-mesa-dri
-    equivs-build libgl1-mesa-dri
-    mv libgl1-mesa-dri_*.deb /pkgs/libgl1-mesa-dri.deb
-    cd /tmp/adwaita-icon-theme
-    equivs-control adwaita-icon-theme
-    printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: adwaita-icon-theme\nVersion: 99.0.0\nDescription: Dummy package for adwaita-icon-theme\n' >> adwaita-icon-theme
-    equivs-build adwaita-icon-theme
-    mv adwaita-icon-theme_*.deb /pkgs/adwaita-icon-theme.deb
-    dpkg -i /pkgs/libgl1-mesa-dri.deb
-    dpkg -i /pkgs/adwaita-icon-theme.deb
-    apt install -y --no-install-recommends chromium chromium-common chromium-driver xvfb dumb-init procps curl vim xauth
-    useradd --home-dir /opt/FlareSolverr --shell /bin/sh flaresolverr
-    usermod -aG media flaresolverr
-    git clone -b master --depth 1 https://github.com/FlareSolverr/FlareSolverr.git /opt/FlareSolverr
-    cd /opt/FlareSolverr
-    python3 -m venv venv
-    /opt/FlareSolverr/venv/bin/python -m pip install -r requirements.txt
-    mv /usr/bin/chromedriver /opt/FlareSolverr/chromedriver
-    mkdir -p "/opt/FlareSolverr/.config/chromium/Crash Reports/pending"
-    chown -R flaresolverr:flaresolverr /opt/FlareSolverr
-    systemctl enable flaresolverr.service
-    rm -f /usr/lib/x86_64-linux-gnu/libmfxhw*
-    rm -f /usr/lib/x86_64-linux-gnu/mfx/*
-    rm -rf /pkgs
+        mkdir -p /tmp/{libgl1-mesa-dri,adwaita-icon-theme} /pkgs 
+        cd /tmp/libgl1-mesa-dri
+        equivs-control libgl1-mesa-dri
+        printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libgl1-mesa-dri\nVersion: 99.0.0\nDescription: Dummy package for libgl1-mesa-dri\n' >> libgl1-mesa-dri
+        equivs-build libgl1-mesa-dri
+        mv libgl1-mesa-dri_*.deb /pkgs/libgl1-mesa-dri.deb
+        cd /tmp/adwaita-icon-theme
+        equivs-control adwaita-icon-theme
+        printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: adwaita-icon-theme\nVersion: 99.0.0\nDescription: Dummy package for adwaita-icon-theme\n' >> adwaita-icon-theme
+        equivs-build adwaita-icon-theme
+        mv adwaita-icon-theme_*.deb /pkgs/adwaita-icon-theme.deb
+        dpkg -i /pkgs/libgl1-mesa-dri.deb
+        dpkg -i /pkgs/adwaita-icon-theme.deb
+        apt-get install -y --no-install-recommends chromium chromium-common chromium-driver xvfb dumb-init procps curl vim xauth
+        useradd --home-dir /opt/FlareSolverr --shell /bin/sh flaresolverr
+        usermod -aG media flaresolverr
+        git clone -b master --depth 1 https://github.com/FlareSolverr/FlareSolverr.git /opt/FlareSolverr
+        cd /opt/FlareSolverr
+        python3 -m venv venv
+        /opt/FlareSolverr/venv/bin/python3 -m pip install -r requirements.txt
+        mv /usr/bin/chromedriver /opt/FlareSolverr/chromedriver
+        mkdir -p "/opt/FlareSolverr/.config/chromium/Crash Reports/pending"
+        chown -R flaresolverr:flaresolverr /opt/FlareSolverr
 
-    useradd -m --home-dir /opt/qbittorrent qbittorrent
-    usermod -aG media qbittorrent
-    systemctl enable qbittorrent.service
+        rm -f /usr/lib/x86_64-linux-gnu/libmfxhw*
+        rm -f /usr/lib/x86_64-linux-gnu/mfx/*
+        rm -rf /pkgs
 
-    useradd -m --home-dir /opt/sabnzbdplus sabnzbdplus
-    usermod -aG media sabnzbdplus
-    systemctl enable sabnzbdplus.service
+        useradd -m --home-dir /opt/qbittorrent qbittorrent
+        usermod -aG media qbittorrent
+
+        useradd -m --home-dir /opt/sabnzbdplus sabnzbdplus
+        usermod -aG media sabnzbdplus
+
+        systemctl enable sabnzbdplus.service qbittorrent.service flaresolverr.service
