@@ -3,13 +3,16 @@ FROM ubuntu:latest
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
         build-essential \
+        gnupg2 \
         debootstrap \
+        squashfs-tools \
+        make \
+        rsync \
         curl \
         wget \
         git \
         vim \
         unzip \
-        squashfs-tools \
     && apt-get clean all \
     && rm -rf /var/lib/apt/lists/*
 

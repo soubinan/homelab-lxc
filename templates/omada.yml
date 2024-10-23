@@ -1,47 +1,56 @@
-name: Omada
+metadata:
+  name: Omada
+  get_version_command: curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1|grep -oE "v[0-9]+.[0-9]+.[0-9]+"
+  description: TP-Link Omada SDN Controller Solution offers centralized and efficient management for gateways, switches, and wAP.
+  categories: SDN, Networks
+  project_source: https://www.tp-link.com/en/support/download/omada-software-controller
+  distribution: debian
+  release: buster
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/nodered.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Node-RED
+        After=syslog.target network.target
 
-files:
-- path: /etc/systemd/system/nodered.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Node-RED
-    After=syslog.target network.target
+        [Service]
+        ExecStart=/usr/bin/node-red --max-old-space-size=128 -v
+        Restart=on-failure
+        KillSignal=SIGINT
 
-    [Service]
-    ExecStart=/usr/bin/node-red --max-old-space-size=128 -v
-    Restart=on-failure
-    KillSignal=SIGINT
+        SyslogIdentifier=node-red
+        StandardOutput=syslog
 
-    SyslogIdentifier=node-red
-    StandardOutput=syslog
+        WorkingDirectory=/root/
+        User=root
+        Group=root
 
-    WorkingDirectory=/root/
-    User=root
-    Group=root
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  packages:
+    - jsvc
+    - nvidia-openjdk-8-jre
+    - libssl-dev
 
-packages:
-- jsvc
-- nvidia-openjdk-8-jre
-- libssl-dev
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        cd /tmp
 
-    cd /tmp
+        wget -qL https://repo.mongodb.org/apt/debian/dists/buster/mongodb-org/4.4/main/binary-amd64/mongodb-org-server_4.4.29_amd64.deb
+        apt-get install -fy ./mongodb-org-server*_amd64.deb
 
-    wget -qL https://repo.mongodb.org/apt/debian/dists/buster/mongodb-org/4.4/main/binary-amd64/mongodb-org-server_4.4.29_amd64.deb
-    apt install -fy ./mongodb-org-server*_amd64.deb
+        wget -qL $(curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1)
+        apt-get install -fy ./*Omada_SDN_Controller*.deb
 
-    wget -qL $(curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1)
-    apt install -fy ./*Omada_SDN_Controller*.deb
-
-    systemctl enable mongod.service
+        systemctl enable mongod.service

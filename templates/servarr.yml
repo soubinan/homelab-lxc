@@ -1,313 +1,318 @@
-files:
-- path: /etc/systemd/system/readarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Readarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=readarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Readarr/Readarr -nobrowser -data=/var/lib/readarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+metadata:
+  name: Servarr
+  get_version_command: date +%Y-%m
+  description: Media organizer/manager stack (ARR) for usenet and torrent users. This stack includes QBitTorrent, SABnzbd, FlareSolverr, Bazarr and the ARR stack.
+  categories: Media management
+  project_source: https://wiki.servarr.com
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/readarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Readarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=readarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Readarr/Readarr -nobrowser -data=/var/lib/readarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/sonarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Sonarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=sonarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Sonarr/Sonarr -nobrowser -data=/var/lib/sonarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/sonarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Sonarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=sonarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Sonarr/Sonarr -nobrowser -data=/var/lib/sonarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/radarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Radarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=radarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Radarr/Radarr -nobrowser -data=/var/lib/radarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/radarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Radarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=radarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Radarr/Radarr -nobrowser -data=/var/lib/radarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/lidarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Lidarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=lidarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Lidarr/Lidarr -nobrowser -data=/var/lib/lidarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/lidarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Lidarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=lidarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Lidarr/Lidarr -nobrowser -data=/var/lib/lidarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/prowlarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Prowlarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=prowlarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Prowlarr/Prowlarr -nobrowser -data=/var/lib/prowlarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/prowlarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Prowlarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=prowlarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Prowlarr/Prowlarr -nobrowser -data=/var/lib/prowlarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/whisparr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Whisparr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=whisparr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Whisparr/Whisparr -nobrowser -data=/var/lib/whisparr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/whisparr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Whisparr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=whisparr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Whisparr/Whisparr -nobrowser -data=/var/lib/whisparr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/bazarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Bazarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=bazarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/bazarr/venv/bin/python -u /opt/bazarr/bazarr.py
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/bazarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Bazarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=bazarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/bazarr/venv/bin/python3 -u /opt/bazarr/bazarr.py
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/flaresolverr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=FlareSolverr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=flaresolverr
-    Group=media
-    Type=simple
-    ExecStart=/opt/FlareSolverr/venv/bin/python -u /opt/FlareSolverr/src/flaresolverr.py
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/flaresolverr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=FlareSolverr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=flaresolverr
+        Group=media
+        Type=simple
+        ExecStart=/opt/FlareSolverr/venv/bin/python3 -u /opt/FlareSolverr/src/flaresolverr.py
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/qbittorrent.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=QBitTorrent Daemon
-    After=syslog.target network.target
-    [Service]
-    User=qbittorrent
-    Group=media
-    Type=simple
-    ExecStart=/usr/bin/qbittorrent-nox --first-and-last --skip-dialog=true
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/qbittorrent.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=QBitTorrent Daemon
+        After=syslog.target network.target
+        [Service]
+        User=qbittorrent
+        Group=media
+        Type=simple
+        ExecStart=/usr/bin/qbittorrent-nox --first-and-last --skip-dialog=true
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/sabnzbdplus.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=SABnzbdplus Daemon
-    After=syslog.target network.target
-    [Service]
-    User=sabnzbdplus
-    Group=media
-    Type=simple
-    ExecStart=/usr/bin/sabnzbdplus -s 0.0.0.0:8081
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/sabnzbdplus.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=SABnzbdplus Daemon
+        After=syslog.target network.target
+        [Service]
+        User=sabnzbdplus
+        Group=media
+        Type=simple
+        ExecStart=/usr/bin/sabnzbdplus -s 0.0.0.0:8081
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-packages:
-- git
-- sqlite3
-- python3-pip
-- python3-venv
-- python3-distutils
-- python3-dev
-- equivs
-- 7zip
-- unrar-free
-- unzip
-- qbittorrent-nox
-- sabnzbdplus
+  packages:
+    - git
+    - sqlite3
+    - python3-pip
+    - python3-venv
+    - python3-distutils
+    - python3-dev
+    - equivs
+    - 7zip
+    - unrar-free
+    - unzip
+    - qbittorrent-nox
+    - sabnzbdplus
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-    export ARCH={{ image.architecture }}
-    if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
 
-    mkdir /downloads
-    groupadd media
-    chown -R :media /downloads
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
 
-    cd /opt
+        cd /opt
 
-    useradd readarr
-    usermod -aG media readarr
-    mkdir -p /var/lib/readarr
-    chown readarr:readarr -R /var/lib/readarr
-    wget --content-disposition "http://readarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Readarr.linux.tar.gz
-    tar -xvzf Readarr*.linux*.tar.gz
-    chown readarr:readarr -R /opt/Readarr
-    systemctl enable readarr.service
+        useradd readarr
+        usermod -aG media readarr
+        mkdir -p /var/lib/readarr
+        chown readarr:readarr -R /var/lib/readarr
+        wget --content-disposition "http://readarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Readarr.linux.tar.gz
+        tar -xvzf Readarr*.linux*.tar.gz
+        chown readarr:readarr -R /opt/Readarr
 
-    useradd sonarr
-    usermod -aG media sonarr
-    mkdir -p /var/lib/sonarr
-    chown sonarr:sonarr -R /var/lib/sonarr
-    wget --content-disposition "https://services.sonarr.tv/v1/download/main/latest?version=4&os=linux&arch=${ARCH}" -O Sonarr.linux.tar.gz
-    tar -xvzf Sonarr*.linux*.tar.gz
-    chown sonarr:sonarr -R /opt/Sonarr
-    systemctl enable sonarr.service
+        useradd sonarr
+        usermod -aG media sonarr
+        mkdir -p /var/lib/sonarr
+        chown sonarr:sonarr -R /var/lib/sonarr
+        wget --content-disposition "https://services.sonarr.tv/v1/download/main/latest?version=4&os=linux&arch=${ARCH}" -O Sonarr.linux.tar.gz
+        tar -xvzf Sonarr*.linux*.tar.gz
+        chown sonarr:sonarr -R /opt/Sonarr
 
-    useradd radarr
-    usermod -aG media radarr
-    mkdir -p /var/lib/radarr
-    chown radarr:radarr -R /var/lib/radarr
-    wget --content-disposition "http://radarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Radarr.linux.tar.gz
-    tar -xvzf Radarr*.linux*.tar.gz
-    chown radarr:radarr -R /opt/Radarr
-    systemctl enable radarr.service
+        useradd radarr
+        usermod -aG media radarr
+        mkdir -p /var/lib/radarr
+        chown radarr:radarr -R /var/lib/radarr
+        wget --content-disposition "http://radarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Radarr.linux.tar.gz
+        tar -xvzf Radarr*.linux*.tar.gz
+        chown radarr:radarr -R /opt/Radarr
 
-    useradd lidarr
-    usermod -aG media lidarr
-    mkdir -p /var/lib/lidarr
-    chown lidarr:lidarr -R /var/lib/lidarr
-    wget --content-disposition "http://lidarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Lidarr.linux.tar.gz
-    tar -xvzf Lidarr*.linux*.tar.gz
-    chown lidarr:lidarr -R /opt/Lidarr
-    systemctl enable lidarr.service
+        useradd lidarr
+        usermod -aG media lidarr
+        mkdir -p /var/lib/lidarr
+        chown lidarr:lidarr -R /var/lib/lidarr
+        wget --content-disposition "http://lidarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Lidarr.linux.tar.gz
+        tar -xvzf Lidarr*.linux*.tar.gz
+        chown lidarr:lidarr -R /opt/Lidarr
 
-    useradd prowlarr
-    usermod -aG media prowlarr
-    mkdir -p /var/lib/prowlarr
-    chown prowlarr:prowlarr -R /var/lib/prowlarr
-    wget --content-disposition "http://prowlarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Prowlarr.linux.tar.gz
-    tar -xvzf Prowlarr*.linux*.tar.gz
-    chown prowlarr:prowlarr -R /opt/Prowlarr
-    systemctl enable prowlarr.service
+        useradd prowlarr
+        usermod -aG media prowlarr
+        mkdir -p /var/lib/prowlarr
+        chown prowlarr:prowlarr -R /var/lib/prowlarr
+        wget --content-disposition "http://prowlarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Prowlarr.linux.tar.gz
+        tar -xvzf Prowlarr*.linux*.tar.gz
+        chown prowlarr:prowlarr -R /opt/Prowlarr
 
-    useradd whisparr
-    usermod -aG media whisparr
-    mkdir -p /var/lib/whisparr
-    chown whisparr:whisparr -R /var/lib/whisparr
-    wget --content-disposition "http://whisparr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Whisparr.linux.tar.gz
-    tar -xvzf Whisparr*.linux*.tar.gz
-    chown whisparr:whisparr -R /opt/Whisparr
-    systemctl enable whisparr.service
-    rm -rf *.tar.gz
+        useradd whisparr
+        usermod -aG media whisparr
+        mkdir -p /var/lib/whisparr
+        chown whisparr:whisparr -R /var/lib/whisparr
+        wget --content-disposition "http://whisparr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Whisparr.linux.tar.gz
+        tar -xvzf Whisparr*.linux*.tar.gz
+        chown whisparr:whisparr -R /opt/Whisparr
+        rm -rf *.tar.gz
 
-    mkdir /opt/bazarr
-    useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
-    usermod -aG media bazarr
-    wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
-    unzip /opt/bazarr.zip -d /opt/bazarr
-    cd /opt/bazarr
-    python3 -m venv venv
-    /opt/bazarr/venv/bin/python -m pip install -r requirements.txt
-    chown -R bazarr:bazarr /opt/bazarr
-    systemctl enable bazarr.service
-    rm -rf /opt/*.zip
+        mkdir /opt/bazarr
+        useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
+        usermod -aG media bazarr
+        wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
+        unzip /opt/bazarr.zip -d /opt/bazarr
+        cd /opt/bazarr
+        python3 -m venv venv
+        /opt/bazarr/venv/bin/python3 -m pip install -r requirements.txt
+        chown -R bazarr:bazarr /opt/bazarr
+        rm -rf /opt/*.zip
 
-    mkdir -p /tmp/{libgl1-mesa-dri,adwaita-icon-theme} /pkgs 
-    cd /tmp/libgl1-mesa-dri
-    equivs-control libgl1-mesa-dri
-    printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libgl1-mesa-dri\nVersion: 99.0.0\nDescription: Dummy package for libgl1-mesa-dri\n' >> libgl1-mesa-dri
-    equivs-build libgl1-mesa-dri
-    mv libgl1-mesa-dri_*.deb /pkgs/libgl1-mesa-dri.deb
-    cd /tmp/adwaita-icon-theme
-    equivs-control adwaita-icon-theme
-    printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: adwaita-icon-theme\nVersion: 99.0.0\nDescription: Dummy package for adwaita-icon-theme\n' >> adwaita-icon-theme
-    equivs-build adwaita-icon-theme
-    mv adwaita-icon-theme_*.deb /pkgs/adwaita-icon-theme.deb
-    dpkg -i /pkgs/libgl1-mesa-dri.deb
-    dpkg -i /pkgs/adwaita-icon-theme.deb
-    apt install -y --no-install-recommends chromium chromium-common chromium-driver xvfb dumb-init procps curl vim xauth
-    useradd --home-dir /opt/FlareSolverr --shell /bin/sh flaresolverr
-    usermod -aG media flaresolverr
-    git clone -b master --depth 1 https://github.com/FlareSolverr/FlareSolverr.git /opt/FlareSolverr
-    cd /opt/FlareSolverr
-    python3 -m venv venv
-    /opt/FlareSolverr/venv/bin/python -m pip install -r requirements.txt
-    mv /usr/bin/chromedriver /opt/FlareSolverr/chromedriver
-    mkdir -p "/opt/FlareSolverr/.config/chromium/Crash Reports/pending"
-    chown -R flaresolverr:flaresolverr /opt/FlareSolverr
-    systemctl enable flaresolverr.service
-    rm -f /usr/lib/x86_64-linux-gnu/libmfxhw*
-    rm -f /usr/lib/x86_64-linux-gnu/mfx/*
-    rm -rf /pkgs
+        mkdir -p /tmp/{libgl1-mesa-dri,adwaita-icon-theme} /pkgs 
+        cd /tmp/libgl1-mesa-dri
+        equivs-control libgl1-mesa-dri
+        printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libgl1-mesa-dri\nVersion: 99.0.0\nDescription: Dummy package for libgl1-mesa-dri\n' >> libgl1-mesa-dri
+        equivs-build libgl1-mesa-dri
+        mv libgl1-mesa-dri_*.deb /pkgs/libgl1-mesa-dri.deb
+        cd /tmp/adwaita-icon-theme
+        equivs-control adwaita-icon-theme
+        printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: adwaita-icon-theme\nVersion: 99.0.0\nDescription: Dummy package for adwaita-icon-theme\n' >> adwaita-icon-theme
+        equivs-build adwaita-icon-theme
+        mv adwaita-icon-theme_*.deb /pkgs/adwaita-icon-theme.deb
+        dpkg -i /pkgs/libgl1-mesa-dri.deb
+        dpkg -i /pkgs/adwaita-icon-theme.deb
+        apt-get install -y --no-install-recommends chromium chromium-common chromium-driver xvfb dumb-init procps curl vim xauth
+        useradd --home-dir /opt/FlareSolverr --shell /bin/sh flaresolverr
+        usermod -aG media flaresolverr
+        git clone -b master --depth 1 https://github.com/FlareSolverr/FlareSolverr.git /opt/FlareSolverr
+        cd /opt/FlareSolverr
+        python3 -m venv venv
+        /opt/FlareSolverr/venv/bin/python3 -m pip install -r requirements.txt
+        mv /usr/bin/chromedriver /opt/FlareSolverr/chromedriver
+        mkdir -p "/opt/FlareSolverr/.config/chromium/Crash Reports/pending"
+        chown -R flaresolverr:flaresolverr /opt/FlareSolverr
+        rm -f /usr/lib/x86_64-linux-gnu/libmfxhw*
+        rm -f /usr/lib/x86_64-linux-gnu/mfx/*
+        rm -rf /pkgs
 
-    useradd -m --home-dir /opt/qbittorrent qbittorrent
-    usermod -aG media qbittorrent
-    systemctl enable qbittorrent.service
+        useradd -m --home-dir /opt/qbittorrent qbittorrent
+        usermod -aG media qbittorrent
 
-    useradd -m --home-dir /opt/sabnzbdplus sabnzbdplus
-    usermod -aG media sabnzbdplus
-    systemctl enable sabnzbdplus.service
+        useradd -m --home-dir /opt/sabnzbdplus sabnzbdplus
+        usermod -aG media sabnzbdplus
+
+        systemctl enable prowlarr.service sonarr.service radarr.service \
+          bazarr.service readarr.service lidarr.service whisparr.service \
+          flaresolverr.service qbittorrent.service sabnzbdplus.service

@@ -1,100 +1,109 @@
-name: Keycloak
+metadata:
+  name: Keycloak
+  get_version_command: curl -Ls  https://api.github.com/repos/keycloak/keycloak/releases/latest | jq -r '.tag_name'
+  description: Open Source Identity and Access Management.
+  categories: Identity, IAM, IDP, Security
+  project_source: https://github.com/keycloak/keycloak
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/keycloak/creds.env
+      generator: dump
+      mode: "0440"
+      content: |-
+        KEYCLOAK_ADMIN=
+        KEYCLOAK_ADMIN_PASSWORD=
+        JAVA_OPTS_APPEND="-Djava.net.preferIPv4Stack=true"
 
-files:
-- path: /etc/keycloak/creds.env
-  generator: dump
-  mode: '0440'
-  content: |-
-    KEYCLOAK_ADMIN=
-    KEYCLOAK_ADMIN_PASSWORD=
-    JAVA_OPTS_APPEND="-Djava.net.preferIPv4Stack=true"
+    - path: /opt/utils/set-ip.sh
+      generator: dump
+      mode: "0755"
+      content: |-
+        sleep 5
+        HOSTN=$(ip addr list eth0 | grep -E "inet .* metric" | cut -d' ' -f6 | cut -d/ -f1 | head -n 1)
+        sed -i "s/^hostname.*/hostname=$HOSTN/" /opt/keycloak/conf/keycloak.conf
 
-- path: /opt/utils/set-ip.sh
-  generator: dump
-  mode: '0755'
-  content: |-
-    sleep 5
-    HOSTN=$(ip addr list eth0 | grep -E "inet .* metric" | cut -d' ' -f6 | cut -d/ -f1 | head -n 1)
-    sed -i "s/^hostname.*/hostname=$HOSTN/" /opt/keycloak/conf/keycloak.conf
+    - path: /etc/systemd/system/keycloak-init.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Open Source Identity and Access Management
+        After=network.target
 
-- path: /etc/systemd/system/keycloak-init.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Open Source Identity and Access Management
-    After=network.target
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/opt/utils/set-ip.sh
 
-    [Service]
-    Type=oneshot
-    RemainAfterExit=yes
-    ExecStart=/opt/utils/set-ip.sh
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/keycloak.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Open Source Identity and Access Management
+        After=network.target keycloak-init.service
+        PathChanged=/opt/keycloak/conf/keycloak.conf
 
-- path: /etc/systemd/system/keycloak.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Open Source Identity and Access Management
-    After=network.target keycloak-init.service
-    PathChanged=/opt/keycloak/conf/keycloak.conf
+        [Service]
+        Type=simple
+        Restart=always
+        # Update /etc/keycloak/creds.env with the admin credentials you want.
+        EnvironmentFile=/etc/keycloak/creds.env
+        Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        ExecStart=/opt/keycloak/bin/kc.sh start
 
-    [Service]
-    Type=simple
-    Restart=always
-    # Update /etc/keycloak/creds.env with the admin credentials you want.
-    EnvironmentFile=/etc/keycloak/creds.env
-    Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-    ExecStart=/opt/keycloak/bin/kc.sh start
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+    - path: /opt/certs/rootCA.config
+      generator: copy
+      source: assets/rootCA.config
 
-- path: /opt/certs/rootCA.config
-  generator: copy
-  source: assets/rootCA.config
+    - path: /opt/certs/csr.config
+      generator: copy
+      source: assets/csr.config
 
-- path: /opt/certs/csr.config
-  generator: copy
-  source: assets/csr.config
+    - path: /opt/certs/crt.config
+      generator: copy
+      source: assets/crt.config
 
-- path: /opt/certs/crt.config
-  generator: copy
-  source: assets/crt.config
+  packages:
+    - openjdk-17-jre
+    - fontconfig
 
-packages:
-- openjdk-17-jre
-- fontconfig
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        mkdir -p /opt/keycloak
 
-    mkdir -p /opt/keycloak
+        openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+        openssl genrsa -out /etc/ssl/private/keycloak.key 2048
+        openssl req -new -key /etc/ssl/private/keycloak.key -out /etc/ssl/private/keycloak.csr -config /opt/certs/csr.config
+        openssl x509 -req -in /etc/ssl/private/keycloak.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/keycloak.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
 
-    openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-    openssl genrsa -out /etc/ssl/private/keycloak.key 2048
-    openssl req -new -key /etc/ssl/private/keycloak.key -out /etc/ssl/private/keycloak.csr -config /opt/certs/csr.config
-    openssl x509 -req -in /etc/ssl/private/keycloak.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/keycloak.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+        wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz
+        tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/
 
-    wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz
-    tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/
+        cat <<EOF > /opt/keycloak/conf/keycloak.conf
+        hostname=0.0.0.0
+        https-certificate-file=/etc/ssl/private/keycloak.crt
+        https-certificate-key-file=/etc/ssl/private/keycloak.key
+        EOF
 
-    cat <<EOF > /opt/keycloak/conf/keycloak.conf
-    hostname=0.0.0.0
-    https-certificate-file=/etc/ssl/private/keycloak.crt
-    https-certificate-key-file=/etc/ssl/private/keycloak.key
-    EOF
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
-    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        cd /opt/keycloak/bin && ./kc.sh build
 
-    cd /opt/keycloak/bin && ./kc.sh build
-
-    systemctl enable keycloak-init.service
-    systemctl enable keycloak.service
+        systemctl enable keycloak-init.service
+        systemctl enable keycloak.service

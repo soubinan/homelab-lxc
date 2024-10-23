@@ -1,47 +1,58 @@
-files:
-- path: /etc/systemd/system/readarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Readarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=readarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Readarr/Readarr -nobrowser -data=/var/lib/readarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+metadata:
+  name: Readarr
+  get_version_command: curl -s https://api.github.com/repos/Readarr/Readarr/releases?per_page=1 | jq -r '.[0].tag_name'
+  description: Readarr is an eBook and audiobook collection manager for Usenet and BitTorrent users.
+  categories: Media management
+  project_source: https://wiki.servarr.com/readarr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/readarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Readarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=readarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Readarr/Readarr -nobrowser -data=/var/lib/readarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-packages:
-- git
-- sqlite3
+  packages:
+    - git
+    - sqlite3
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-    export ARCH={{ image.architecture }}
-    if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
 
-    mkdir /downloads
-    groupadd media
-    chown -R :media /downloads
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
 
-    cd /opt
+        cd /opt
 
-    useradd readarr
-    usermod -aG media readarr
-    mkdir -p /var/lib/readarr
-    chown readarr:readarr -R /var/lib/readarr
-    wget --content-disposition "http://readarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Readarr.linux.tar.gz
-    tar -xvzf Readarr*.linux*.tar.gz
-    chown readarr:readarr -R /opt/Readarr
-    systemctl enable readarr.service
+        useradd readarr
+        usermod -aG media readarr
+        mkdir -p /var/lib/readarr
+        chown readarr:readarr -R /var/lib/readarr
+        wget --content-disposition "http://readarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Readarr.linux.tar.gz
+        tar -xvzf Readarr*.linux*.tar.gz
+        chown readarr:readarr -R /opt/Readarr
+        systemctl enable readarr.service

@@ -1,0 +1,45 @@
+name: Build Trigger
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - main
+    paths:
+      - ".github/workflows/trigger.yml"
+      - "./templates/*"
+  schedule:
+    - cron: "0 0 */7 * *"
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: List templates
+        id: templates-list
+        run: |
+          sudo apt-get install -y jq
+          echo TEMPLATES_LIST="$(ls templates/* | jq -Rsc 'split("\n")[:-1]')" | tee -a $GITHUB_OUTPUT
+    outputs:
+      templates_list: ${{steps.templates-list.outputs.TEMPLATES_LIST}}
+
+  image-build:
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix:
+        templates: ${{ fromJson(needs.init.outputs.templates_list) }}
+    uses: ./.github/workflows/builder.yml
+    with:
+      config_path: ${{matrix.templates}}
+      branch_name: ${{github.event.pull_request.base.ref}}
+      is_merged: ${{github.event.pull_request.merged || github.event_name == 'schedule'}}
+    secrets: inherit

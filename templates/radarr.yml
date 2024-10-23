@@ -1,84 +1,95 @@
-files:
-- path: /etc/systemd/system/radarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Radarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=radarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Radarr/Radarr -nobrowser -data=/var/lib/radarr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+metadata:
+  name: Radarr
+  get_version_command: curl -s https://api.github.com/repos/Radarr/Radarr/releases/latest | jq -r '.tag_name'
+  description: Radarr is a movie collection manager for Usenet and BitTorrent users.
+  categories: Media management
+  project_source: https://wiki.servarr.com/radarr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/radarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Radarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=radarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Radarr/Radarr -nobrowser -data=/var/lib/radarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-- path: /etc/systemd/system/bazarr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Bazarr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=bazarr
-    Group=media
-    Type=simple
-    ExecStart=/opt/bazarr/venv/bin/python -u /opt/bazarr/bazarr.py
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+    - path: /etc/systemd/system/bazarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Bazarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=bazarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/bazarr/venv/bin/python3 -u /opt/bazarr/bazarr.py
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-packages:
-- git
-- sqlite3
-- python3-pip
-- python3-venv
-- python3-distutils
-- python3-dev
-- 7zip
-- unrar-free
-- unzip
+  packages:
+    - git
+    - sqlite3
+    - python3-pip
+    - python3-venv
+    - python3-distutils
+    - python3-dev
+    - 7zip
+    - unrar-free
+    - unzip
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-    export ARCH={{ image.architecture }}
-    if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
 
-    mkdir /downloads
-    groupadd media
-    chown -R :media /downloads
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
 
-    cd /opt
+        cd /opt
 
-    useradd radarr
-    usermod -aG media radarr
-    mkdir -p /var/lib/radarr
-    chown radarr:radarr -R /var/lib/radarr
-    wget --content-disposition "http://radarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Radarr.linux.tar.gz
-    tar -xvzf Radarr*.linux*.tar.gz
-    chown radarr:radarr -R /opt/Radarr
-    systemctl enable radarr.service
+        useradd radarr
+        usermod -aG media radarr
+        mkdir -p /var/lib/radarr
+        chown radarr:radarr -R /var/lib/radarr
+        wget --content-disposition "http://radarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Radarr.linux.tar.gz
+        tar -xvzf Radarr*.linux*.tar.gz
+        chown radarr:radarr -R /opt/Radarr
+        systemctl enable radarr.service
 
-    mkdir /opt/bazarr
-    useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
-    usermod -aG media bazarr
-    wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
-    unzip /opt/bazarr.zip -d /opt/bazarr
-    cd /opt/bazarr
-    python3 -m venv venv
-    /opt/bazarr/venv/bin/python -m pip install -r requirements.txt
-    chown -R bazarr:bazarr /opt/bazarr
-    systemctl enable bazarr.service
-    rm -rf /opt/*.zip
+        mkdir /opt/bazarr
+        useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
+        usermod -aG media bazarr
+        wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
+        unzip /opt/bazarr.zip -d /opt/bazarr
+        cd /opt/bazarr
+        python3 -m venv venv
+        /opt/bazarr/venv/bin/python3 -m pip install -r requirements.txt
+        chown -R bazarr:bazarr /opt/bazarr
+        systemctl enable bazarr.service
+        rm -rf /opt/*.zip

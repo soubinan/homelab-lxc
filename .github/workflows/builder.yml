@@ -6,30 +6,6 @@ on:
       config_path:
         required: true
         type: string
-      app_name:
-        required: true
-        type: string
-      app_version:
-        required: true
-        type: string
-      description:
-        required: true
-        type: string
-      categories:
-        required: true
-        type: string
-      project_source:
-        required: true
-        type: string
-      distribution:
-        required: true
-        type: string
-      architecture:
-        required: true
-        type: string
-      release:
-        required: true
-        type: string
       branch_name:
         required: true
         type: string
@@ -47,62 +23,100 @@ on:
         required: true
 
 jobs:
-  image-build:
-    if: ${{inputs.app_version}} != "null" && ${{inputs.app_version}} != ""
+  init:
     runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Get params
+        id: get-params
+        run: |
+          GET_VERSION_COMMAND=$(eval "$(cat ${{inputs.config_path}} | yq -r '.metadata.get_version_command') | sed -E 's/^[vV]//'")
+
+          echo "APP_VERSION=$(echo $GET_VERSION_COMMAND)" | tee -a $GITHUB_OUTPUT
+          echo "APP_NAME=$(cat ${{inputs.config_path}} | yq -r '.metadata.name = (.metadata.name | downcase) | .metadata.name')" | tee -a $GITHUB_OUTPUT
+          echo "DESCRIPTION=$(cat ${{inputs.config_path}} | yq -r '.metadata.description = (.metadata.description | downcase) | .metadata.description')" | tee -a $GITHUB_OUTPUT
+          echo "CATEGORIES=$(cat ${{inputs.config_path}} | yq -r '.metadata.categories = (.metadata.categories | downcase) | .metadata.categories')" | tee -a $GITHUB_OUTPUT
+          echo "PROJECT_SOURCE=$(cat ${{inputs.config_path}} | yq -r '.metadata.project_source = (.metadata.project_source | downcase) | .metadata.project_source')" | tee -a $GITHUB_OUTPUT
+          echo "DISTRIBUTION=$(cat ${{inputs.config_path}} | yq -r '.metadata.distribution = (.metadata.distribution | downcase) | .metadata.distribution')" | tee -a $GITHUB_OUTPUT
+          echo "ARCHITECTURES=$(cat ${{inputs.config_path}} | yq -r '.metadata.architectures' -o json -I=0)" | tee -a $GITHUB_OUTPUT
+          echo "RELEASE=$(cat ${{inputs.config_path}} | yq -r '.metadata.release = (.metadata.release | downcase) | .metadata.release')" | tee -a $GITHUB_OUTPUT
+    outputs:
+      app_name: ${{steps.get-params.outputs.APP_NAME}}
+      app_version: ${{steps.get-params.outputs.APP_VERSION}}
+      description: ${{steps.get-params.outputs.DESCRIPTION}}
+      categories: ${{steps.get-params.outputs.CATEGORIES}}
+      project_source: ${{steps.get-params.outputs.PROJECT_SOURCE}}
+      distribution: ${{steps.get-params.outputs.DISTRIBUTION}}
+      architectures: ${{steps.get-params.outputs.ARCHITECTURES}}
+      release: ${{steps.get-params.outputs.RELEASE}}
+
+  image-build:
+    needs: init
+    if: ${{needs.init.outputs.app_version}} != "null" && ${{needs.init.outputs.app_version}} != ""
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architectures: ${{ fromJson(needs.init.outputs.architectures) }}
     steps:
       - name: Check submitted version
         id: version-check
         run: |
-          SUBMITTED_BUILD_ID=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}
-          CHECKED_BUILD_ID=$(curl -sLX POST $HOMELAB_LXC_EP -H "Content-Type: application/json" -d '{"query":"query CheckBuildID { build(where: {buildId: \"${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}\"}) { buildId } }"}'| jq -r '.data.build.buildId')
+          SUBMITTED_BUILD_ID=${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}
+          CHECKED_BUILD_ID=$(curl -sLX POST $HOMELAB_LXC_EP -H "Content-Type: application/json" -d '{"query":"query CheckBuildID { build(where: {buildId: \"${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}\"}) { buildId } }"}' | jq -r '.data.build.buildId')
           echo "SUBMITTED_BUILD_ID=$SUBMITTED_BUILD_ID" >> $GITHUB_OUTPUT
           echo "CHECKED_BUILD_ID=$CHECKED_BUILD_ID" >> $GITHUB_OUTPUT
         env:
           HOMELAB_LXC_EP: ${{secrets.HOMELAB_LXC_EP}}
 
+      - name: Check necessary steps
+        id: validity-checks
+        run: |
+          echo "IS_BUILDABLE=${{github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')}}" >> $GITHUB_OUTPUT
+          echo "IS_PUBLISHABLE=${{inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)}}" >> $GITHUB_OUTPUT
+
       - name: Check out repository
         uses: actions/checkout@v4
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
 
       - name: Install required tools
-        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y debootstrap squashfs-tools jq wget curl unzip python3 python3-pip
+          sudo apt-get install -y debootstrap squashfs-tools wget unzip python3 python3-pip
           sudo snap install distrobuilder --classic
-          mkdir -p /tmp/output/${{inputs.app_name}}
-          mkdir -p /tmp/cache/${{inputs.app_name}}
-          HURL_VERSION=$(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest |jq -r '.tag_name')
+          mkdir -p /tmp/output/${{needs.init.outputs.app_name}}
+          mkdir -p /tmp/cache/${{needs.init.outputs.app_name}}
+          HURL_VERSION=$(curl -s https://api.github.com/repos/Orange-OpenSource/hurl/releases/latest | jq -r '.tag_name')
           curl --silent --location https://github.com/Orange-OpenSource/hurl/releases/download/${HURL_VERSION}/hurl-${HURL_VERSION}-x86_64-unknown-linux-gnu.tar.gz | tar xvz -C /tmp
           sudo cp /tmp/hurl-${HURL_VERSION}-x86_64-unknown-linux-gnu/bin/* /usr/bin/
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
           sudo -v ; wget -q https://kcl-lang.io/script/install-cli.sh -O - | sudo bash
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
 
       - name: Create Distrobuilder LXC template file
-        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
         run: |
-          yq eval '. as $root | {"kcl_options": [{"key": "build-instructions", "value": $root}]}' ${{github.workspace}}/${{inputs.config_path}} > ${{github.workspace}}/${{inputs.config_path}}_repacked.yaml
-          kcl ${{github.workspace}}/templates/__debian_base.k -Y ${{github.workspace}}/${{inputs.config_path}}_repacked.yaml > ${{github.workspace}}/lxc-template.yml
+          kcl run ${{github.workspace}}/__layout.k -D input=${{github.workspace}}/${{inputs.config_path}} -o /tmp/${{needs.init.outputs.app_name}}.build
 
       - name: Build Image
-        if: github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
         run: |
-          sudo distrobuilder --cache-dir /tmp/cache/${{inputs.app_name}} build-lxc ${{github.workspace}}/lxc-template.yml -o image.distribution=${{inputs.distribution}} -o image.architecture=${{inputs.architecture}} -o image.release=${{inputs.release}} -o image.serial="${{inputs.app_version}}" -o source.url="http://ftp.us.debian.org/debian" /tmp/output/${{inputs.app_name}}/
-          mv /tmp/output/${{inputs.app_name}}/rootfs.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz
-          mv /tmp/output/${{inputs.app_name}}/meta.tar.xz ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz
-          echo "ARTIFACT_SIZE=$(du -sh ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz| cut -f 1)" >> $GITHUB_ENV
+          sudo distrobuilder --cache-dir /tmp/cache/${{needs.init.outputs.app_name}} build-lxc /tmp/${{needs.init.outputs.app_name}}.build -o image.serial="${{needs.init.outputs.app_version}}" -o image.architecture=${{matrix.architectures}} /tmp/output/${{needs.init.outputs.app_name}}/
+          mv /tmp/output/${{needs.init.outputs.app_name}}/rootfs.tar.xz ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz
+          mv /tmp/output/${{needs.init.outputs.app_name}}/meta.tar.xz ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-meta.tar.xz
+          echo "ARTIFACT_SIZE=$(du -sh ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz | cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
 
       - name: Publish Image files
-        if: inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)
+        if: ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
           EOF
           echo
-          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
-          rclone copy ./${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          rclone copy ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
+          rclone copy ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-meta.tar.xz cloudflare:lxc-images --config /tmp/rclone.conf
           echo
           echo 'LXC Image published successfully !'
         env:
@@ -110,17 +124,17 @@ jobs:
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish Image metadata
-        if: inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)
+        if: ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
         run: |
-          CATEGORIES_STR="${{inputs.categories}}"
-          CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g'| sed -E 's/ *, */","/g')
+          CATEGORIES_STR="${{needs.init.outputs.categories}}"
+          CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g' | sed -E 's/ *, */","/g')
 
           hurl -v --variable endpoint_url=$HOMELAB_LXC_EP --variable token=$HOMELAB_LXC_TOKEN \
-            --variable app_name=${{inputs.app_name}} --variable app_version=${{inputs.app_version}} \
-            --variable arch=${{inputs.architecture}} --variable dist=${{inputs.distribution}} \
-            --variable dist_release=${{inputs.release}} --variable build_id=${{inputs.app_name}}-${{inputs.app_version}}-${{inputs.architecture}} \
-            --variable size=$ARTIFACT_SIZE --variable source=${{inputs.project_source}} --variable is_for_test=${{inputs.branch_name == 'test'}} \
-            --variable categories="$CATEGORIES_FMT" --variable description="${{inputs.description}}" \
+            --variable app_name=${{needs.init.outputs.app_name}} --variable app_version=${{needs.init.outputs.app_version}} \
+            --variable arch=${{matrix.architectures}} --variable dist=${{needs.init.outputs.distribution}} \
+            --variable dist_release=${{needs.init.outputs.release}} --variable build_id=${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}} \
+            --variable size=$ARTIFACT_SIZE --variable source=${{needs.init.outputs.project_source}} --variable is_for_test=${{inputs.branch_name == 'test'}} \
+            --variable categories="$CATEGORIES_FMT" --variable description="${{needs.init.outputs.description}}" \
             .github/publish_build.hurl
           echo
           echo 'LXC build details published successfully !'

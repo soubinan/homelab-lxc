@@ -1,2 +1,17 @@
----
-name: Test
+metadata:
+  name: Test
+  get_version_command: echo "V1.0.0"
+  description: Test
+  categories: Dummy
+  project_source: https://example.com
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
