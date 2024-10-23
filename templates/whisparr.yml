@@ -1,48 +1,59 @@
-files:
-- path: /etc/systemd/system/whisparr.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Whisparr Daemon
-    After=syslog.target network.target
-    [Service]
-    User=whisparr
-    Group=media
-    Type=simple
-    ExecStart=/opt/Whisparr/Whisparr -nobrowser -data=/var/lib/whisparr/
-    TimeoutStopSec=20
-    KillMode=process
-    Restart=on-failure
-    [Install]
-    WantedBy=multi-user.target
+metadata:
+  name: Whisparr
+  get_version_command: date +%Y-%m
+  description: Whisparr is an adult video collection manager for Usenet and BitTorrent users.
+  categories: Media management
+  project_source: https://wiki.servarr.com/whisparr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/whisparr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Whisparr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=whisparr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Whisparr/Whisparr -nobrowser -data=/var/lib/whisparr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-packages:
-- git
-- sqlite3
+  packages:
+    - git
+    - sqlite3
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-    export ARCH={{ image.architecture }}
-    if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
 
-    mkdir /downloads
-    groupadd media
-    chown -R :media /downloads
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
 
-    cd /opt
+        cd /opt
 
-    useradd whisparr
-    usermod -aG media whisparr
-    mkdir -p /var/lib/whisparr
-    chown whisparr:whisparr -R /var/lib/whisparr
-    wget --content-disposition "http://whisparr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Whisparr.linux.tar.gz
-    tar -xvzf Whisparr*.linux*.tar.gz
-    chown whisparr:whisparr -R /opt/Whisparr
-    systemctl enable whisparr.service
-    rm -rf *.tar.gz
+        useradd whisparr
+        usermod -aG media whisparr
+        mkdir -p /var/lib/whisparr
+        chown whisparr:whisparr -R /var/lib/whisparr
+        wget --content-disposition "http://whisparr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Whisparr.linux.tar.gz
+        tar -xvzf Whisparr*.linux*.tar.gz
+        chown whisparr:whisparr -R /opt/Whisparr
+        systemctl enable whisparr.service
+        rm -rf *.tar.gz

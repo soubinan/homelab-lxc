@@ -1,42 +1,51 @@
-name: Code-Server
+metadata:
+  name: Code-Server
+  get_version_command: curl -s https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.tag_name'
+  description: Coder is an open source cloud development environment (CDE), based on VS Code.
+  categories: IDE, Dev
+  project_source: https://github.com/coder/code-server
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/issue.d/99_default-password-info.issue
+      generator: dump
+      mode: "0440"
+      content: |-
+        Find your initial password in ~/.config/code-server/config.yaml
 
-files:
-- path: /etc/issue.d/99_default-password-info.issue
-  generator: dump
-  mode: '0440'
-  content: |-
-    Find your initial password in ~/.config/code-server/config.yaml
+    - path: /etc/systemd/system/code-server.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Code-Server
+        After=network-online.target
 
-- path: /etc/systemd/system/code-server.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Code-Server
-    After=network-online.target
+        [Service]
+        WorkingDirectory=/opt/code
+        ExecStart=code-server --bind-addr 0.0.0.0:8080 --cert
 
-    [Service]
-    WorkingDirectory=/opt/code
-    ExecStart=code-server --bind-addr 0.0.0.0:8080 --cert
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  packages:
+    - jq
+    - git
 
-packages:
-- jq
-- git
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        mkdir /opt/code
+        wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
 
-    mkdir /opt/code
-    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
-
-    curl -fOL https://github.com/coder/code-server/releases/download/v{{image.serial}}/code-server_{{image.serial}}_{{image.architecture}}.deb
-    apt install ./code-server_{{image.serial}}_{{image.architecture}}.deb
-    systemctl enable code-server
-    # Now visit http://127.0.0.1:8080. Your password is in ~/.config/code-server/config.yaml
+        curl -fOL https://github.com/coder/code-server/releases/download/v{{image.serial}}/code-server_{{image.serial}}_{{image.architecture}}.deb
+        apt-get install ./code-server_{{image.serial}}_{{image.architecture}}.deb
+        systemctl enable code-server
+        # Now visit http://127.0.0.1:8080. Your password is in ~/.config/code-server/config.yaml

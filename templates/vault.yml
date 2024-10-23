@@ -1,70 +1,79 @@
-name: Vault
+metadata:
+  name: Vault
+  get_version_command: curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name'
+  description: Vault is a free and source-available secrets management tool / secrets store.
+  categories: Secrets management, Security
+  project_source: https://github.com/hashicorp/vault
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /opt/certs/rootCA.config
+      generator: copy
+      source: assets/rootCA.config
 
-files:
-- path: /opt/certs/rootCA.config
-  generator: copy
-  source: assets/rootCA.config
+    - path: /opt/certs/csr.config
+      generator: copy
+      source: assets/csr.config
 
-- path: /opt/certs/csr.config
-  generator: copy
-  source: assets/csr.config
+    - path: /opt/certs/crt.config
+      generator: copy
+      source: assets/crt.config
 
-- path: /opt/certs/crt.config
-  generator: copy
-  source: assets/crt.config
+    - path: /opt/vault/.config
+      generator: dump
+      content: |-
+        ui            = true
+        cluster_addr  = "https://127.0.0.1:8201"
+        api_addr      = "https://127.0.0.1:8200"
+        disable_mlock = true
 
-- path: /opt/vault/.config
-  generator: dump
-  content: |-
-    ui            = true
-    cluster_addr  = "https://127.0.0.1:8201"
-    api_addr      = "https://127.0.0.1:8200"
-    disable_mlock = true
+        storage "raft" {
+          path = "/opt/vault/data"
+          node_id = "vault01"
+        }
 
-    storage "raft" {
-      path = "/opt/vault/data"
-      node_id = "vault01"
-    }
+        listener "tcp" {
+          address       = "0.0.0.0:8200"
+          tls_cert_file = "/etc/ssl/private/vault.crt"
+          tls_key_file  = "/etc/ssl/private/vault.key"
+        }
 
-    listener "tcp" {
-      address       = "0.0.0.0:8200"
-      tls_cert_file = "/etc/ssl/private/vault.crt"
-      tls_key_file  = "/etc/ssl/private/vault.key"
-    }
+    - path: /etc/systemd/system/vault.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Vault - Secret management
+        After=network.target
 
-- path: /etc/systemd/system/vault.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Vault - Secret management
-    After=network.target
+        [Service]
+        Type=simple
+        PIDFile=/opt/vault/vault.pid
+        ExecStart=/usr/bin/vault server -config /opt/vault/.config
+        Restart=always
 
-    [Service]
-    Type=simple
-    PIDFile=/opt/vault/vault.pid
-    ExecStart=/usr/bin/vault server -config /opt/vault/.config
-    Restart=always
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
+        apt-get update && apt-get install vault
 
-    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
-    apt update && apt install vault
+        mkdir -p /opt/vault/data
 
-    mkdir -p /opt/vault/data
+        openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+        openssl genrsa -out /etc/ssl/private/vault.key 2048
+        openssl req -new -key /etc/ssl/private/vault.key -out /etc/ssl/private/vault.csr -config /opt/certs/csr.config
+        openssl x509 -req -in /etc/ssl/private/vault.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/vault.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
 
-    openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-    openssl genrsa -out /etc/ssl/private/vault.key 2048
-    openssl req -new -key /etc/ssl/private/vault.key -out /etc/ssl/private/vault.csr -config /opt/certs/csr.config
-    openssl x509 -req -in /etc/ssl/private/vault.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/vault.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
-
-    systemctl enable vault.service
+        systemctl enable vault.service
