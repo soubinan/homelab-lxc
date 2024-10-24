@@ -1,13 +1,63 @@
-_application = option("build-instructions", required=True)
-_app_name = option("app_name") or _application.name or "App"
-_repositories_add = _application.repositories or Undefined
-_packages = _application.packages or []
+import yaml
+import file
+
+schema File:
+    path: str
+    generator: str
+    mode?: str
+    source?: str
+    content?: str
+
+schema Repo:
+    name: str
+    url: str
+    key: str
+
+schema Action:
+    trigger: str
+    pongo?: bool = False
+    action: str
+
+schema Metadata:
+    name: str
+    get_version_command: str
+    description: str
+    project_source: str
+    categories: str
+    distribution: str
+    release: str
+    architectures: [str]
+
+    check:
+        distribution != Undefined, "Distribution should be explicitely set"
+        distribution == "debian", "Only debian distribution is allowed"
+
+schema Instructions:
+    files?: [File]
+    packages?: [str]
+    repositories?: [Repo]
+    actions?: [Action]
+
+schema Inputs:
+    metadata: Metadata
+    instructions: Instructions
+
+_inputs_file: str = option("input", default="./templates/debian-test.yml", help="Input file path")
+_inputs_str: str = file.read(filepath=_inputs_file)
+_inputs = Inputs {**yaml.decode(_inputs_str)}
+
+_metadata = _inputs.metadata
+_instructions = _inputs.instructions
+_app_name = _metadata.name or "App"
+_distirbution = "debian"
+_repositories_add = _instructions.repositories or Undefined
+_packages = _instructions.packages or []
 _packages_install = {
     packages = _packages
     action = "install"
 } if _packages else Undefined
-_files_add = _application.files or Undefined
-_actions_add = _application.actions or Undefined
+_files_add = _instructions.files or Undefined
+_actions_add = _instructions.actions or Undefined
 _key1 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBFRvqBkBEADAe63Jl0pw5Ry9LDwn31BJSBat+2WYJXT4Iqsgtmm79drvAcVU
@@ -934,14 +984,11 @@ To enable SSH, run: apt install openssh-server
 No default root or user password are set by LXC."""
 _network_interfaces = """# This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
-
 # The loopback network interface
 auto lo
 iface lo inet loopback
-
 auto eth0
 iface eth0 inet dhcp
-
 source /etc/network/interfaces.d/*"""
 _eth0 = """[Match]
 Name=eth0
@@ -971,7 +1018,6 @@ _welcome_msg_script = """\
 #!/bin/bash
 
 ports=$(ss -ptuln | grep -vE 'systemd|next-router|next-render|127.0.0.|%lo' | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
-
 num_ports=$(echo $ports | wc -l)
 ips=$(ip a|grep 'inet '|awk '{print $2}')
 
@@ -995,10 +1041,24 @@ done <<< $ports
 # Print table footer
 printf '+------------+----------------------+\\n'
 printf '\\n'"""
+_dynamic_components = "{{ image.release }}-backports"
+_dynamic_repos = ""
+if (_metadata.release == "buster"):
+    _dynamic_repos = "deb http://deb.debian.org/debian-security/ {{ image.release }}/updates main non-free contrib"
+
+if (_metadata.release != "buster" and _metadata.release != "sid"):
+    _dynamic_repos = "deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free contrib"
+
+if (_metadata.release == "bullseye"):
+    _dynamic_components = ""
+
+if (_metadata.release != "buster" and _metadata.release != "bullseye" and _metadata.release != "sid"):
+    _dynamic_components = "non-free-firmware {{ image.release }}-backports"
+
 _debian_repositories = """\
-deb http://deb.debian.org/debian {{ image.release }} main non-free non-free-firmware bookworm-backports contrib
-deb http://deb.debian.org/debian {{ image.release }}-updates main non-free non-free-firmware bookworm-backports contrib
-deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware bookworm-backports contrib"""
+deb http://deb.debian.org/debian {{ image.release }} main non-free ${_dynamic_components} contrib
+deb http://deb.debian.org/debian {{ image.release }}-updates main non-free ${_dynamic_components} contrib
+${_dynamic_repos}"""
 _script_set_resolvconf = """\
 #!/bin/bash
 set -eux
@@ -1052,11 +1112,12 @@ rm -rf /root/.cache/*
 rm -rf /var/lib/apt/lists/*"""
 image = {
     distribution = "debian"
-    release = "stable"
+    release = _metadata.release
     variant = "default"
 }
 source = {
     downloader = "debootstrap"
+    url = "http://ftp.us.debian.org/debian"
     same_as = "sid"
     keys = [
         _key1
@@ -1194,12 +1255,17 @@ packages = {
             packages = [
                 "fuse"
                 "openssh-server"
+                "lsb-release"
                 "openssl"
+                "ca-certificates"
+                "apt-transport-https"
                 "cloud-init"
                 "curl"
+                "gzip"
                 "wget"
                 "gpg"
                 "vim"
+                "software-properties-common"
             ]
             action = "install"
         }
@@ -1223,7 +1289,10 @@ actions = [
     {
         trigger = "post-packages"
         action = _script_enable_resolved
-        releases = ["bookworm"]
+        releases = [
+            "bookworm"
+            "trixie"
+        ]
     }
     {
         trigger = "post-packages"
@@ -1247,7 +1316,10 @@ actions = [
     {
         trigger = "post-files"
         action = _script_reset_resolvconf_old
-        releases = ["bullseye"]
+        releases = [
+            "bullseye"
+            "buster"
+        ]
     }
 ]
 mappings = {architecture_map = "debian"}

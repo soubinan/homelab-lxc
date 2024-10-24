@@ -1,0 +1,21 @@
+metadata:
+  name: AdGuard
+  get_version_command: curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest | jq -r '.tag_name'
+  description: Network-wide ads & trackers blocking DNS server
+  categories: DNS, Privacy
+  project_source: https://github.com/AdguardTeam/AdGuardHome
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh -s -- -v
+
+        systemctl enable AdGuardHome.service
