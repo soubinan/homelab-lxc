@@ -1,0 +1,63 @@
+metadata:
+  name: BunkerWeb
+  get_version_command: curl -s https://api.github.com/repos/bunkerity/bunkerweb/releases/latest | jq -r '.tag_name'
+  description: BunkerWeb is a next-generation and open-source Web Application Firewall (WAF).
+  categories: WAF, Security
+  project_source: https://github.com/bunkerity/bunkerweb
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/bunkerweb.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=BunkerWeb service
+        Documentation=https://docs.bunkerweb.io
+        After=network.target
+
+        [Service]
+        Restart=no
+        User=root
+        PIDFile=/var/run/bunkerweb/scheduler.pid
+        ExecStartPre=/usr/bin/systemctl stop nginx.service
+        ExecStartPre=/usr/bin/systemctl stop nginx-debug.service
+        ExecStart=/usr/share/bunkerweb/scripts/start.sh start
+        ExecStop=/usr/share/bunkerweb/scripts/start.sh stop
+        ExecReload=/usr/share/bunkerweb/scripts/start.sh reload
+        Type=exec
+        StandardOutput=journal+console
+        StandardError=journal+console
+
+        [Install]
+        WantedBy=multi-user.target
+        Alias=bunkerweb.service
+
+  packages:
+    - debian-archive-keyring
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
+
+        apt update
+        FULL_VERSION=$(apt-cache madison nginx | grep 1.26.2 | head -n1 | awk '{print $3}')
+        apt install -y nginx=$FULL_VERSION
+
+        export UI_WIZARD=1
+        curl -s https://repo.bunkerweb.io/install/script.deb.sh | bash
+        apt install -y bunkerweb={{image.serial}}
+        apt-mark hold nginx bunkerweb
+
+        systemctl disable nginx.service
+        systemctl mask nginx-debug.service
+        systemctl enable bunkerweb.service bunkerweb-ui.service

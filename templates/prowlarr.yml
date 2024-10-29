@@ -1,0 +1,58 @@
+metadata:
+  name: Prowlarr
+  get_version_command: curl -s https://api.github.com/repos/Prowlarr/Prowlarr/releases/latest | jq -r '.tag_name'
+  description: Prowlarr is an indexer manager/proxy built on the popular arr .net/reactjs base stack to integrate with your various PVR apps.
+  categories: Media management
+  project_source: https://wiki.servarr.com/prowlarr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/prowlarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Prowlarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=prowlarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Prowlarr/Prowlarr -nobrowser -data=/var/lib/prowlarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
+
+  packages:
+    - git
+    - sqlite3
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
+
+        cd /opt
+
+        useradd prowlarr
+        usermod -aG media prowlarr
+        mkdir -p /var/lib/prowlarr
+        chown prowlarr:prowlarr -R /var/lib/prowlarr
+        wget --content-disposition "http://prowlarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Prowlarr.linux.tar.gz
+        tar -xvzf Prowlarr*.linux*.tar.gz
+        chown prowlarr:prowlarr -R /opt/Prowlarr
+        systemctl enable prowlarr.service

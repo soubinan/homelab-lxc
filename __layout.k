@@ -1,14 +1,65 @@
-_application = option("build-instructions", required=True)
-_app_name = option("app_name") or _application.name or "App"
-_repositories_add = _application.repositories or Undefined
-_packages = _application.packages or []
+import yaml
+import file
+
+schema File:
+    path: str
+    generator: str
+    mode?: str
+    source?: str
+    content?: str
+
+schema Repo:
+    name: str
+    url: str
+    key: str
+
+schema Action:
+    trigger: str
+    pongo?: bool = False
+    action: str
+
+schema Metadata:
+    name: str
+    get_version_command: str
+    description: str
+    project_source: str
+    categories: str
+    distribution: str
+    release: str
+    architectures: [str]
+
+    check:
+        distribution != Undefined, "Distribution should be explicitely set"
+        distribution == "debian", "Only debian distribution is allowed"
+
+schema Instructions:
+    files?: [File]
+    packages?: [str]
+    repositories?: [Repo]
+    actions?: [Action]
+
+schema Inputs:
+    metadata: Metadata
+    instructions?: Instructions
+
+_inputs_file: str = option("input", default="./templates/debian-test.yml", help="Input file path")
+_inputs_str: str = file.read(filepath=_inputs_file)
+_inputs = Inputs {**yaml.decode(_inputs_str)}
+
+_metadata = _inputs.metadata
+_instructions = _inputs.instructions
+_app_name = _metadata.name or "App"
+_distirbution = "debian"
+_repositories_add = _instructions.repositories or []
+_packages = _instructions.packages or Undefined
 _packages_install = {
     packages = _packages
     action = "install"
 } if _packages else Undefined
-_files_add = _application.files or Undefined
-_actions_add = _application.actions or Undefined
-_key1 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+_files_add = _instructions.files or []
+_actions_add = _instructions.actions or []
+_key1 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBFRvqBkBEADAe63Jl0pw5Ry9LDwn31BJSBat+2WYJXT4Iqsgtmm79drvAcVU
 JjtGZX11XdJj/aIVxeafghYxVj4Ld+yxiB25GAcxGr5O3Acv7DOlBQnqFZ7jvZUd
@@ -197,8 +248,10 @@ cYE0lv+TUU0OpbxwGEea2d+YaBS/ZSy3yGMrv8kf4VM/iZUDYWsrB/0q+SRQeaKE
 utERYOxjvA+geNHpBZa1LdKg1KWeZI7PpaHE19N53u8hSeFMkaTCqFLhk2WmEYyU
 tizqJW3oSFiqIcpiyfN+0rLetGa0WslDnSIhyclfxOPMH14=
 =k46C
------END PGP PUBLIC KEY BLOCK-----"""
-_key2 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_key2 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBE+a7rUBEADQiEKtLOgqiq8YY/p7IFODMqGPR+o1vtXaksie8iTOh3Vxab38
 cA3kK1iB5XYElbZ5b/x3vWiufHK2semOpn5MG2GRJUwmKxZbt3HLZiHtAadkby2l
@@ -544,8 +597,10 @@ TgECAPFpPDjYlf7ZIGKrOWYX7vhmGqA/oytxueIrG1AS66zB8MlfnrXPgDgun9cd
 Gjbs3Bh4bJrvoCvhWAf9kIEnShX69NQbfZFvfG2b9WocV5yMLH0bZ/tCa1hFRMpc
 qCTHsZBLcjOQhV5Ubg==
 =L+5x
------END PGP PUBLIC KEY BLOCK-----"""
-_key3 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_key3 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBFxZ9FABEADPEDVwAUd10zcdnQJF7klaxK1mcTEUd+xfNAKBjhvP69XdAf54
 7PS8Xid9zMAK/JARzLsZj5STy1VQQrPGOkSqPKA+gSpW8CmEWwfL/VTfQFFrJ9kb
@@ -597,8 +652,10 @@ MnjVJCXOIls7rkI2128c2cQSeUNBW8N/dXTthE0SAqTek5jGGgJ5oo7brPFmJLhD
 2ywOhgdo65iPihKiqLGr2pSrcmwJ3LvHpCgQldjqZfF9dmJAqdoO+WDYBU3pTQGV
 idjr8CGNeffTyeMJbSniGisGOkhiX9TLbz8ufw==
 =a2kx
------END PGP PUBLIC KEY BLOCK-----"""
-_key4 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_key4 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBFyy5ecBEACxXGKUyi5dFjPhEFoz3IwKlVfDxySVg+hlhcUEO657UHf/7Ba5
 wr9eHxjlbpxetAymSNnptgh8oaJWcokr9UjeaTbKrYGpRra7Wd1W+f++9tF7BVvV
@@ -771,8 +828,10 @@ calvWyo8N+XrZKD8NQnWQ/BocU9r5S5aJFcovdcmm1s1Ymdlo5Yuk8WHZDOsSf38
 VzY12szoQ9eMbBJOH7MhseS/gIWC/4x1eEEhGbPQbkzKZlJifv+55Mqqq7emGyBG
 qn8+ouVQUr65+xcIST13Ffg80zc=
 =lfn1
------END PGP PUBLIC KEY BLOCK-----"""
-_key5 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_key5 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBF/7h7cBEAC9H4Seq0jkv3r3P+JNAoHi2O+X8Q3upG+JUnek3p8dNl+JyTEw
 hVkDNttWhoqZOH+QLcL5oMd0Nr1zM9ng3pmarmX2DFk+aO95pnCoIlpA/nr0SQV/
@@ -801,8 +860,10 @@ xllJFHFCxU+0t0ImEW7Uk7rojIBluDZdRfwliI7fDCCnTFf1fF9e6gJUrKUNZFTp
 yoUM8+FwlIhpEGhn4o8+ezyG83IebGVDxydnX1rrph+eZ9BvWWjesHo8R5FDvoPV
 oPh9t/VGRvdQHA==
 =KM28
------END PGP PUBLIC KEY BLOCK-----"""
-_key6 = """-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_key6 = """\
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBGPL0BUBEADmW5NdOOHwPIJlgPu6JDcKw/NZJPR8lsD3K87ZM18gzyQZJD+w
 ns6TSXOsx+BmpouHZgvh3FQADj/hhLjpNSqH5IH0xY7nic9BuSeyKx2WvfG62yxw
@@ -927,23 +988,26 @@ s8bp4jKtODbPQBxRPQ4MUtLNZsHf6K05NPyB2aRUPP9FLBu6Zqv7YkT+PS1fxuCr
 gwyb6WzC7OpdW9MHhVBP+5BPExPZmVRl8o1t5vzBgxhDgbE+uB2S7HbpY2BVubVU
 22lSkijKki64QmcUnp84EDZQdk+myhnGBqi+yw==
 =swbo
------END PGP PUBLIC KEY BLOCK-----"""
-_create_message = """You just created an {{ image.description }} container.
+-----END PGP PUBLIC KEY BLOCK-----
+"""
+_create_message = """\
+You just created an {{ image.description }} container.
 
 To enable SSH, run: apt install openssh-server
-No default root or user password are set by LXC."""
-_network_interfaces = """# This file describes the network interfaces available on your system
+No default root or user password are set by LXC.
+"""
+_network_interfaces = """\
+# This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
-
 # The loopback network interface
 auto lo
 iface lo inet loopback
-
 auto eth0
 iface eth0 inet dhcp
-
-source /etc/network/interfaces.d/*"""
-_eth0 = """[Match]
+source /etc/network/interfaces.d/*
+"""
+_eth0 = """\
+[Match]
 Name=eth0
 
 [Network]
@@ -953,7 +1017,8 @@ DHCP=true
 UseDomains=true
 
 [DHCP]
-ClientIdentifier=mac"""
+ClientIdentifier=mac
+"""
 _welcome_msg_issue = """\
 | Built by:
 |
@@ -963,21 +1028,22 @@ _welcome_msg_issue = """\
 |     ░▓█▓░▓█▓░▓█▓░▓█▓▒▓█▓░▓█▓▒▓█▓░▓█▓░▓█▓░  ░▓█▓▒▓█▓░▓█▓▒▓█▓░   ░▓█▓
 | ▒▓████▓░ ░▓███▓░ ▒▓███▓▒ ▓████▓░ ▓█▓░▓████▓░▓█▓▒▓█▓░▓████▓▒░▓████▓░
 |
-Welcome on your {} LXC\n""".format(_app_name)
+Welcome to your ${_app_name} LXC
+"""
 _welcome_msg_cron = """\
 @reboot root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
-* * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue"""
+* * * * * root /etc/profile.d/50-welcome.sh > /etc/issue.d/51-welcome.issue
+"""
 _welcome_msg_script = """\
 #!/bin/bash
 
 ports=$(ss -ptuln | grep -vE 'systemd|next-router|next-render|127.0.0.|%lo' | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
-
 num_ports=$(echo $ports | wc -l)
 ips=$(ip a|grep 'inet '|awk '{print $2}')
 
 printf '\\n'
 printf '+-----------------------------------+\\n'
-printf '| %-33s |\\n' '""" + _app_name + """ is listening on'
+printf '| %-33s |\\n' '${_app_name} is listening on'
 
 while read -r ip; do
     printf '| %-33s |\\n' \"  => $ip\"
@@ -994,41 +1060,65 @@ done <<< $ports
 
 # Print table footer
 printf '+------------+----------------------+\\n'
-printf '\\n'"""
+printf '\\n'
+"""
+_dynamic_components = ""
+_dynamic_repos = ""
+if (_metadata.release == "buster"):
+    _dynamic_repos = "deb http://deb.debian.org/debian-security/ {{ image.release }}/updates non-free contrib main"
+
+if (_metadata.release != "buster" and _metadata.release != "sid"):
+    _dynamic_repos = "deb http://deb.debian.org/debian-security/ {{ image.release }}-security non-free contrib main"
+
+if (_metadata.release != "buster" and _metadata.release != "bullseye" and _metadata.release != "sid"):
+    _dynamic_components = "non-free-firmware"
+
 _debian_repositories = """\
-deb http://deb.debian.org/debian {{ image.release }} main non-free non-free-firmware bookworm-backports contrib
-deb http://deb.debian.org/debian {{ image.release }}-updates main non-free non-free-firmware bookworm-backports contrib
-deb http://deb.debian.org/debian-security/ {{ image.release }}-security main non-free non-free-firmware bookworm-backports contrib"""
+deb http://deb.debian.org/debian {{ image.release }} non-free ${_dynamic_components} contrib main
+deb http://deb.debian.org/debian {{ image.release }}-updates non-free ${_dynamic_components} contrib main
+${_dynamic_repos}
+"""
 _script_set_resolvconf = """\
 #!/bin/bash
 set -eux
+
 cat /etc/resolv.conf > /tmp/resolv.conf
 umount -l /etc/resolv.conf || true
-mv /tmp/resolv.conf /etc/"""
+mv /tmp/resolv.conf /etc/
+"""
 _script_reset_resolvconf_new = """\
 #!/bin/bash
 set -eux
+
 umount -l /etc/resolv.conf || true
-ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf"""
+ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+"""
 _script_reset_resolvconf_old = """\
 #!/bin/bash
 set -eux
+
 umount -l /etc/resolv.conf || true
-ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf"""
+ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf
+"""
 _script_enable_networkd = """\
 #!/bin/bash
 set -eux
+
 # Enable networkd socket
 systemctl enable systemd-networkd.socket
-systemctl enable systemd-networkd.service"""
+systemctl enable systemd-networkd.service
+"""
 _script_enable_resolved = """\
 #!/bin/bash
 set -eux
+
 # Enable systemd-resolved
-systemctl enable systemd-resolved.service"""
+systemctl enable systemd-resolved.service
+"""
 _script_update_locale = """\
 #!/bin/bash
 set -eux
+
 # Make sure the locale is built and functional
 echo en_US.UTF-8 UTF-8 >> /etc/locale.gen
 locale-gen en_US.UTF-8 UTF-8
@@ -1038,25 +1128,46 @@ mount -o bind / /mnt
 rm -rf /mnt/run/*
 umount /mnt
 # Cleanup temporary shadow paths
-rm /etc/*-"""
+rm /etc/*-
+"""
+_script_preparations = """\
+#!/bin/bash
+set -eux
+
+tee /usr/sbin/systemctl <<EOF
+#!/bin/bash
+if [[ "\$1" == "start" || "\$1" == "restart" || "\$1" == "try-restart" || "\$1" == "reload" || "\$1" == "stop" ]]; then
+    echo "Skipping \$1 command for \$2 as requested by policy."
+else
+    /usr/bin/systemctl "\$@"
+fi
+EOF
+
+chmod +x /usr/sbin/systemctl
+"""
 _script_cleanup_files = """\
 #!/bin/bash
 set -eux
+
 apt-get autoremove --purge -y
 apt-get clean -y
+
+rm -rf /usr/sbin/systemctl
 rm -rf /var/cache/apt/archives/*.deb
 rm -rf /tmp/*
 rm -rf /var/tmp/*
 rm -rf /usr/local/share/.cache/*
 rm -rf /root/.cache/*
-rm -rf /var/lib/apt/lists/*"""
+rm -rf /var/lib/apt/lists/*
+"""
 image = {
     distribution = "debian"
-    release = "stable"
+    release = _metadata.release
     variant = "default"
 }
 source = {
     downloader = "debootstrap"
+    url = "http://ftp.us.debian.org/debian"
     same_as = "sid"
     keys = [
         _key1
@@ -1194,12 +1305,18 @@ packages = {
             packages = [
                 "fuse"
                 "openssh-server"
+                "lsb-release"
                 "openssl"
+                "ca-certificates"
+                "apt-transport-https"
                 "cloud-init"
                 "curl"
+                "gzip"
                 "wget"
-                "gpg"
+                "gnupg2"
                 "vim"
+                "software-properties-common"
+                "tzdata"
             ]
             action = "install"
         }
@@ -1223,17 +1340,23 @@ actions = [
     {
         trigger = "post-packages"
         action = _script_enable_resolved
-        releases = ["bookworm"]
+        releases = [
+            "bookworm"
+            "trixie"
+        ]
     }
     {
         trigger = "post-packages"
         action = _script_update_locale
     }
+    {
+        trigger = "post-files"
+        action = _script_preparations
+    }
     *_actions_add
     {
         trigger = "post-files"
         action = _script_cleanup_files
-        releases = ["bookworm"]
     }
     {
         trigger = "post-files"
@@ -1247,7 +1370,10 @@ actions = [
     {
         trigger = "post-files"
         action = _script_reset_resolvconf_old
-        releases = ["bullseye"]
+        releases = [
+            "bullseye"
+            "buster"
+        ]
     }
 ]
 mappings = {architecture_map = "debian"}

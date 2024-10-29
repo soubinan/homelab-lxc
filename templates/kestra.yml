@@ -1,58 +1,66 @@
-name: Kestra
+metadata:
+  name: Kestra
+  get_version_command: curl -s https://api.github.com/repos/kestra-io/kestra/releases/latest | jq -r '.tag_name'
+  description: Kestra is a free and open-source workflow orchestrator and automation tool.
+  categories: Automation, Orchestration
+  project_source: https://github.com/kestra-io/kestra
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/kestra.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Kestra
+        After=network.target
 
-files:
-- path: /etc/systemd/system/kestra.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Kestra
-    After=network.target
+        [Service]
+        Type = simple
+        WorkingDirectory=/opt/kestra
+        ExecStart=/opt/kestra/kestra server local --worker-thread 5
+        TimeoutSec = 15
+        Restart = on-failure
 
-    [Service]
-    Type = simple
-    WorkingDirectory=/opt/kestra
-    ExecStart=/opt/kestra/kestra server local --worker-thread 5
-    TimeoutSec = 15
-    Restart = on-failure
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  packages:
+    - build-essential
+    - autoconf
+    - git
+    - unzip
 
-packages:
-- build-essential
-- autoconf
-- git
-- unzip
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        curl https://download.java.net/java/GA/jdk22.0.1/c7ec1332f7bb44aeba2eb341ae18aca4/8/GPL/openjdk-22.0.1_linux-x64_bin.tar.gz -o /tmp/openjdk.tar.gz
+        curl -sL https://api.kestra.io/v1/versions/download -o /tmp/kestra.zip
 
-    curl https://download.java.net/java/GA/jdk22.0.1/c7ec1332f7bb44aeba2eb341ae18aca4/8/GPL/openjdk-22.0.1_linux-x64_bin.tar.gz -o /tmp/openjdk.tar.gz
-    curl -sL https://api.kestra.io/v1/versions/download -o /tmp/kestra.zip
+        mkdir -p /opt/kestra
+        mkdir -p /opt/jdk
 
-    mkdir -p /opt/kestra
-    mkdir -p /opt/jdk
+        cd /tmp
 
-    cd /tmp
+        tar -zxf /tmp/openjdk.tar.gz -C /opt/jdk
+        unzip /tmp/kestra.zip && rm /tmp/kestra.zip
 
-    tar -zxf /tmp/openjdk.tar.gz -C /opt/jdk
-    unzip /tmp/kestra.zip && rm /tmp/kestra.zip
+        update-alternatives --install /usr/bin/java java /opt/jdk/jdk*/bin/java 100
+        update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk*/bin/javac 100
+        update-alternatives --display java
+        update-alternatives --display javac
 
-    update-alternatives --install /usr/bin/java java /opt/jdk/jdk*/bin/java 100
-    update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk*/bin/javac 100
-    update-alternatives --display java
-    update-alternatives --display javac
+        cd /opt/kestra
+        mv /tmp/kestra* ./kestra && chmod +x ./kestra
 
-    cd /opt/kestra
+        curl -sL https://raw.githubusercontent.com/kestra-io/kestra/develop/.plugins | grep io.kestra | sed s,#,,g > ./plugins-list
+        cat ./plugins-list | xargs -P 4 -I % bash -c 'echo "Install: %" && ./kestra plugins install % && echo "% installation done" || echo "% installation failed"'
 
-    curl -sL https://raw.githubusercontent.com/kestra-io/kestra/develop/.plugins | grep io.kestra | sed s,#,,g > ./plugins-list
-
-    mv /tmp/kestra* ./kestra && chmod +x ./kestra
-    for i in $(cat ./plugins-list); do ./kestra plugins install $i; done
-
-    systemctl enable kestra.service
+        systemctl enable kestra.service

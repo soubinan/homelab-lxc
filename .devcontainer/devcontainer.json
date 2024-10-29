@@ -6,8 +6,14 @@
     "dockerfile": "Dockerfile"
   },
   "remoteUser": "root",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/homelab-lxc,type=bind,consistency=cached,Z=true",
-  "workspaceFolder": "/workspace/homelab-lxc",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/homelab-lxc,type=bind,consistency=cached,Z=true",
+  "workspaceFolder": "/workspaces/homelab-lxc",
+  "initializeCommand": {
+    "clean_kcl": "rm -rf ${localWorkspaceFolder}/.kclvm",
+    "clean_partial": "rm -f ${localWorkspaceFolder}/_lxc-partial.yml",
+    "clean_template": "rm -f ${localWorkspaceFolder}/_lxc-template.yml",
+    "clean_image": "rm -f ${localWorkspaceFolder}/*.tar.*"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,7 +21,8 @@
         "eamodio.gitlens",
         "kcl.kcl-vscode-extension",
         "redhat.vscode-yaml",
-        "stateful.runme"
+        "stateful.runme",
+        "github.vscode-github-actions"
       ]
     }
   }

@@ -1,0 +1,95 @@
+metadata:
+  name: Sonarr
+  get_version_command: curl -s https://api.github.com/repos/Sonarr/Sonarr/releases/latest | jq -r '.tag_name'
+  description: Sonarr is a PVR for Usenet and BitTorrent users.
+  categories: Media management
+  project_source: https://wiki.servarr.com/sonarr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/sonarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Sonarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=sonarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Sonarr/Sonarr -nobrowser -data=/var/lib/sonarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
+
+    - path: /etc/systemd/system/bazarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Bazarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=bazarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/bazarr/venv/bin/python3 -u /opt/bazarr/bazarr.py
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
+
+  packages:
+    - git
+    - sqlite3
+    - python3-pip
+    - python3-venv
+    - python3-distutils
+    - python3-dev
+    - 7zip
+    - unrar-free
+    - unzip
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
+
+        cd /opt
+
+        useradd sonarr
+        usermod -aG media sonarr
+        mkdir -p /var/lib/sonarr
+        chown sonarr:sonarr -R /var/lib/sonarr
+        wget --content-disposition "https://services.sonarr.tv/v1/download/main/latest?version=4&os=linux&arch=${ARCH}" -O Sonarr.linux.tar.gz
+        tar -xvzf Sonarr*.linux*.tar.gz
+        chown sonarr:sonarr -R /opt/Sonarr
+        systemctl enable sonarr.service
+
+        mkdir /opt/bazarr
+        useradd --home-dir /opt/bazarr --shell /bin/sh bazarr
+        usermod -aG media bazarr
+        wget https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip -O /opt/bazarr.zip
+        unzip /opt/bazarr.zip -d /opt/bazarr
+        cd /opt/bazarr
+        python3 -m venv venv
+        /opt/bazarr/venv/bin/python3 -m pip install -r requirements.txt
+        chown -R bazarr:bazarr /opt/bazarr
+        systemctl enable bazarr.service
+        rm -rf /opt/*.zip

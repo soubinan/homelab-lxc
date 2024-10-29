@@ -1,0 +1,60 @@
+metadata:
+  name: Lidarr
+  get_version_command: curl -s https://api.github.com/repos/Lidarr/Lidarr/releases/latest | jq -r '.tag_name'
+  description: Lidarr is a music collection manager for Usenet and BitTorrent users.
+  categories: Media management
+  project_source: https://wiki.servarr.com/lidarr
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/lidarr.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Lidarr Daemon
+        After=syslog.target network.target
+        [Service]
+        User=lidarr
+        Group=media
+        Type=simple
+        ExecStart=/opt/Lidarr/Lidarr -nobrowser -data=/var/lib/lidarr/
+        TimeoutStopSec=20
+        KillMode=process
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
+
+  packages:
+    - git
+    - sqlite3
+    - mediainfo
+    - libchromaprint-tools
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        export ARCH={{ image.architecture }}
+        if [[ "$ARCH" == "amd64" ]];then export ARCH="x64"; fi
+
+        mkdir /downloads
+        groupadd media
+        chown -R :media /downloads
+
+        cd /opt
+
+        useradd lidarr
+        usermod -aG media lidarr
+        mkdir -p /var/lib/lidarr
+        chown lidarr:lidarr -R /var/lib/lidarr
+        wget --content-disposition "http://lidarr.servarr.com/v1/update/nightly/updatefile?os=linux&runtime=netcore&arch=${ARCH}" -O Lidarr.linux.tar.gz
+        tar -xvzf Lidarr*.linux*.tar.gz
+        chown lidarr:lidarr -R /opt/Lidarr
+        systemctl enable lidarr.service

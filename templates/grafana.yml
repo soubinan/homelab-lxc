@@ -1,0 +1,27 @@
+metadata:
+  name: Grafana
+  get_version_command: curl -s https://api.github.com/repos/grafana/grafana/releases/latest | jq -r '.tag_name'
+  description: The open and composable observability and data visualization platform.
+  categories: Monitoring, Dashboard, Analytics
+  project_source: https://github.com/grafana/grafana
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        mkdir -p /etc/apt/keyrings/
+        wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | tee /etc/apt/keyrings/grafana.gpg > /dev/null
+
+        echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee -a /etc/apt/sources.list.d/grafana.list
+
+        apt-get update
+        apt-get install -y grafana
+
+        systemctl enable grafana-server.service

@@ -1,48 +1,34 @@
 metadata:
-  name: Jellyseerr
-  get_version_command: curl -s https://api.github.com/repos/Fallenbagel/jellyseerr/releases/latest | jq -r '.tag_name'
-  description: Open source software application for managing requests for your media library.
-  categories: Media management
-  project_source: https://github.com/Fallenbagel/jellyseerr
+  name: Node-RED
+  get_version_command: curl -s https://api.github.com/repos/node-red/node-red/releases/latest | jq -r '.tag_name'
+  description: Low-code programming for event-driven applications
+  categories: Automation, Workflows
+  project_source: https://github.com/node-red/node-red
   distribution: debian
   release: bookworm
   architectures:
     - amd64
 instructions:
   files:
-    - path: /etc/jellyseerr/jellyseerr.conf
-      generator: dump
-      mode: "0440"
-      content: |-
-        # Jellyseerr's default port is 5055, if you want to use both, change this.
-        # specify on which port to listen
-        PORT=5055
-
-        # specify on which interface to listen, by default jellyseerr listens on all interfaces
-        #HOST=127.0.0.1
-
-        # Uncomment if your media server is emby instead of jellyfin.
-        # JELLYFIN_TYPE=emby
-
-        ## Uncomment if you want to force Node.js to resolve IPv4 before IPv6 (advanced users only)
-        FORCE_IPV4_FIRST=true
-
-    - path: /etc/systemd/system/jellyseerr.service
+    - path: /etc/systemd/system/nodered.service
       generator: dump
       mode: "0440"
       content: |-
         [Unit]
-        Description=Jellyseerr Service
-        Wants=network-online.target
-        After=network-online.target
+        Description=Node-RED
+        After=syslog.target network.target
 
         [Service]
-        EnvironmentFile=/etc/jellyseerr/jellyseerr.conf
-        Environment=NODE_ENV=production
-        Type=exec
+        ExecStart=/usr/bin/node-red --max-old-space-size=128 -v
         Restart=on-failure
-        WorkingDirectory=/opt/jellyseerr
-        ExecStart=/usr/bin/node dist/index.js
+        KillSignal=SIGINT
+
+        SyslogIdentifier=node-red
+        StandardOutput=syslog
+
+        WorkingDirectory=/root/
+        User=root
+        Group=root
 
         [Install]
         WantedBy=multi-user.target
@@ -93,19 +79,6 @@ instructions:
         #!/bin/bash
         set -eux
 
-        export SHELL=/bin/bash
-        export ENV=~/.bashrc
-        export CYPRESS_INSTALL_BINARY=0
+        npm install -g --unsafe-perm node-red
 
-        curl -fsSL https://get.pnpm.io/install.sh | bash -
-        source $ENV
-
-        git clone https://github.com/Fallenbagel/jellyseerr -b v{{ image.serial }} --depth 1 /opt/jellyseerr
-        cd /opt/jellyseerr
-
-        pnpm install --frozen-lockfile
-        pnpm build
-
-        rm -rf src server .next/cache
-
-        systemctl enable jellyseerr.service
+        systemctl enable nodered.service

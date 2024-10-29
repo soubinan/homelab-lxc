@@ -3,17 +3,21 @@ FROM ubuntu:latest
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
         build-essential \
+        gnupg2 \
         debootstrap \
+        squashfs-tools \
+        make \
+        rsync \
         curl \
         wget \
         git \
         vim \
         unzip \
-        squashfs-tools \
     && apt-get clean all \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q https://kcl-lang.io/script/install-cli.sh -O - | bash && \
+    wget -q https://kcl-lang.io/script/install-kcl-lsp.sh -O - | bash && \
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
     chmod +x /usr/bin/yq
 

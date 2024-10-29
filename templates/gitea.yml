@@ -1,48 +1,57 @@
-name: Gitea
+metadata:
+  name: Gitea
+  get_version_command: curl -s https://dl.gitea.com/gitea/version.json| jq -r '.latest.version'
+  description: Git with a cup of tea! Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD.
+  categories: Git, CI CD, Dev
+  project_source: https://github.com/go-gitea/gitea
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /etc/systemd/system/gitea.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description=Gitea (Git with a cup of tea)
+        After=network.target
 
-files:
-- path: /etc/systemd/system/gitea.service
-  generator: dump
-  mode: '0440'
-  content: |-
-    [Unit]
-    Description=Gitea (Git with a cup of tea)
-    After=network.target
+        [Service]
+        User=git
+        Group=git
+        LimitNOFILE=524288:524288
+        RestartSec=2s
+        Type=simple
+        WorkingDirectory=/var/lib/gitea/
+        ExecStart=/usr/local/bin/gitea web --config /etc/gitea/app.ini
+        Restart=always
+        Environment=USER=root HOME=/root GITEA_WORK_DIR=/var/lib/gitea
 
-    [Service]
-    User=git
-    Group=git
-    LimitNOFILE=524288:524288
-    RestartSec=2s
-    Type=simple
-    WorkingDirectory=/var/lib/gitea/
-    ExecStart=/usr/local/bin/gitea web --config /etc/gitea/app.ini
-    Restart=always
-    Environment=USER=root HOME=/root GITEA_WORK_DIR=/var/lib/gitea
+        [Install]
+        WantedBy=multi-user.target
 
-    [Install]
-    WantedBy=multi-user.target
+  packages:
+    - git
 
-packages:
-- git
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
 
-actions:
-- trigger: post-files
-  pongo: true
-  action: |-
-    #!/bin/bash
-    set -eux
+        wget -O /usr/local/bin/gitea https://dl.gitea.com/gitea/{{image.serial}}/gitea-{{image.serial}}-linux-amd64
+        chmod +x /usr/local/bin/gitea
 
-    wget -O /usr/local/bin/gitea https://dl.gitea.com/gitea/{{image.serial}}/gitea-{{image.serial}}-linux-amd64
-    chmod +x /usr/local/bin/gitea
+        adduser --system --shell /bin/bash --gecos 'Git Version Control' --group --disabled-password --home /home/git git
 
-    adduser --system --shell /bin/bash --gecos 'Git Version Control' --group --disabled-password --home /home/git git
+        mkdir -p /var/lib/gitea/{custom,data,log}
+        chown -R git:git /var/lib/gitea/
+        chmod -R 750 /var/lib/gitea/
+        mkdir /etc/gitea
+        chown root:git /etc/gitea
+        chmod 770 /etc/gitea
 
-    mkdir -p /var/lib/gitea/{custom,data,log}
-    chown -R git:git /var/lib/gitea/
-    chmod -R 750 /var/lib/gitea/
-    mkdir /etc/gitea
-    chown root:git /etc/gitea
-    chmod 770 /etc/gitea
-
-    systemctl enable gitea.service
+        systemctl enable gitea.service
