@@ -1037,7 +1037,7 @@ _welcome_msg_cron = """\
 _welcome_msg_script = """\
 #!/bin/bash
 
-ports=$(ss -ptuln | grep -vE 'systemd|next-router|next-render|127.0.0.|%lo' | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
+ports=$(ss -ptuln '( sport > :1023 or sport = :80 or sport = :443 )' | grep -vE 'systemd|next-router|next-render|127.0.0.|%lo' | awk '/^tcp/ && $4 !~ /^(127\.|::1|0\.0\.0\.0)/ {print $5}' | awk -F: '{print $NF}' | sort -u)
 num_ports=$(echo $ports | wc -l)
 ips=$(ip a|grep 'inet '|awk '{print $2}')
 
@@ -1046,7 +1046,7 @@ printf '+-----------------------------------+\\n'
 printf '| %-33s |\\n' '${_app_name} is listening on'
 
 while read -r ip; do
-    printf '| %-33s |\\n' \"  => $ip\"
+    printf '| %-33s |\\n' "  => $ip"
 done <<< $ips
 
 printf '+------------+----------------------+\\n'
@@ -1054,7 +1054,7 @@ printf '| %-10s | %-20s |\\n' 'Ports' 'Process'
 printf '+------------+----------------------+\\n'
 
 while read -r port; do
-    application=$(ss -lptn \"sport = :$port\" | tail -n +2 | awk '{print $6}' | cut -d'\"' -f2 | sort -u)
+    application=$(ss -lptn "(sport = :$port)" | tail -n +2 | awk '{print $6}' | cut -d'"' -f2 | sort -u)
     printf '| %-10s | %-20s |\\n' $port $application
 done <<< $ports
 
