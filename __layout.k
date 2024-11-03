@@ -1046,7 +1046,7 @@ printf '+-----------------------------------+\\n'
 printf '| %-33s |\\n' '${_app_name} is listening on'
 
 while read -r ip; do
-    printf '| %-33s |\\n' \"  => $ip\"
+    printf '| %-33s |\\n' "  => $ip"
 done <<< $ips
 
 printf '+------------+----------------------+\\n'
@@ -1054,7 +1054,7 @@ printf '| %-10s | %-20s |\\n' 'Ports' 'Process'
 printf '+------------+----------------------+\\n'
 
 while read -r port; do
-    application=$(ss -lptn \"sport = :$port\" | tail -n +2 | awk '{print $6}' | cut -d'\"' -f2 | sort -u)
+    application=$(ss -lptn "(sport = :$port)" | tail -n +2 | awk '{print $6}' | cut -d'"' -f2 | sort -u)
     printf '| %-10s | %-20s |\\n' $port $application
 done <<< $ports
 
