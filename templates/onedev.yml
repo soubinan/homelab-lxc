@@ -1,0 +1,33 @@
+metadata:
+  name: OneDev
+  get_version_command: curl -s https://api.github.com/repos/theonedev/onedev/releases/latest | jq -r '.tag_name'
+  description: Git Server with CI/CD, Kanban, and Packages. Seamless integration. Unparalleled experience.
+  categories: Git, CI CD, Dev
+  project_source: https://github.com/theonedev/onedev
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  packages:
+    - openjdk-17-jre
+    - fontconfig
+    - git
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+        curl -L https://code.onedev.io/onedev/server/~site/onedev-latest.tar.gz -o /tmp/onedev-latest.tar.gz
+        tar -zxf /tmp/onedev-latest.tar.gz -C /opt/
+
+        bash /opt/onedev-latest/bin/server.sh install
+
+        echo "* hard nofile 65535" >> /etc/security/limits.conf
+
+        systemctl enable onedev.service
