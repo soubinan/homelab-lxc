@@ -99,6 +99,7 @@ instructions:
 
   packages:
     - git
+    - make
     - nodejs
     - redis
     - redis-server
