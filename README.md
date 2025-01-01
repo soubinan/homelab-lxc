@@ -44,6 +44,7 @@ It is very straight forward to add a new build template:
 [Step 1] Install requirements:
 
 - [Install distrobuilder](https://linuxcontainers.org/distrobuilder/docs/latest/howto/install/)
+- [Install debootstrap](https://wiki.debian.org/Debootstrap)
 - [Install KCL](https://www.kcl-lang.io/docs/user_docs/getting-started/install)
 - [Install yq](https://mikefarah.gitbook.io/yq#install) (optional)
 - [Install jq](https://jqlang.github.io/jq/download/) (optional)
