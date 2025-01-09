@@ -1,7 +1,6 @@
 name: Build Trigger
 
 on:
-  workflow_dispatch:
   pull_request:
     types:
       - opened
@@ -15,6 +14,7 @@ on:
       - "./templates/*"
   schedule:
     - cron: "0 0 */7 * *"
+  workflow_dispatch:
 
 jobs:
   init:
