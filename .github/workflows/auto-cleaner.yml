@@ -10,10 +10,10 @@ on:
     branches:
       - main
     paths:
-      - '.github/auto-cleaner.js'
-      - '.github/workflows/auto-cleaner.yml'
+      - ".github/auto-cleaner.js"
+      - ".github/workflows/auto-cleaner.yml"
   schedule:
-    - cron: '0 0 */3 * *'
+    - cron: "0 0 */3 * *"
 
 env:
   NODE_VERSION: 20.x

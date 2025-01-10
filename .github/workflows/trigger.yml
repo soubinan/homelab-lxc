@@ -23,13 +23,29 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: List templates
-        id: templates-list
+      - name: List changed templates
+        id: all-changed-templates-list
+        uses: tj-actions/changed-files@v45
+        with:
+          files: templates/**
+        if: ${{github.event_name}} == 'pull_request'
+
+      - name: List all templates
+        id: all-templates-list
         run: |
           sudo apt-get install -y jq
-          echo TEMPLATES_LIST="$(ls templates/* | jq -Rsc 'split("\n")[:-1]')" | tee -a $GITHUB_OUTPUT
+          echo all_files="$(printf '%s' "$(ls templates/*)" | jq -Rsc 'split("\n")')" | tee -a $GITHUB_OUTPUT
+          echo all_changed_files=$(echo -n ${{ steps.all-changed-templates-list.outputs.all_changed_files }} | jq -Rsc 'split(" ")') | tee -a $GITHUB_OUTPUT
+        if: ${{github.event_name}} != 'pull_request'
+
+      - name: Check templates list
+        id: check-templates-list
+        run: |
+          echo all_files=${{ steps.all-templates-list.outputs.all_files }}
+          echo all_changed_files=${{ steps.all-templates-list.outputs.all_changed_files }}
+          echo TEMPLATES_LIST=${{ steps.all-templates-list.outputs.all_changed_files != '[]' && steps.all-templates-list.outputs.all_changed_files || steps.all-templates-list.outputs.all_files }} | tee -a $GITHUB_OUTPUT
     outputs:
-      templates_list: ${{steps.templates-list.outputs.TEMPLATES_LIST}}
+      templates_list: ${{steps.check-templates-list.outputs.TEMPLATES_LIST}}
 
   image-build:
     needs: init
