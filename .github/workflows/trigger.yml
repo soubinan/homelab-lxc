@@ -34,16 +34,19 @@ jobs:
         id: all-templates-list
         run: |
           sudo apt-get install -y jq
-          echo all_files="$(printf '%s' "$(ls templates/*)" | jq -Rsc 'split("\n")')" | tee -a $GITHUB_OUTPUT
-          echo all_changed_files=$(echo -n ${{ steps.all-changed-templates-list.outputs.all_changed_files }} | jq -Rsc 'split(" ")') | tee -a $GITHUB_OUTPUT
-        if: ${{github.event_name}} != 'pull_request'
+          echo ALL_FILES="$(printf '%s' "$(ls templates/*)" | jq -Rsc 'split("\n")')" | tee -a $GITHUB_ENV
+          echo ALL_CHANGED_FILES=$(echo -n "${{ steps.all-changed-templates-list.outputs.all_changed_files }}" | jq -Rsc 'split(" ")') | tee -a $GITHUB_ENV
 
       - name: Check templates list
         id: check-templates-list
         run: |
-          echo all_files=${{ steps.all-templates-list.outputs.all_files }}
-          echo all_changed_files=${{ steps.all-templates-list.outputs.all_changed_files }}
-          echo TEMPLATES_LIST=${{ steps.all-templates-list.outputs.all_changed_files != '[]' && steps.all-templates-list.outputs.all_changed_files || steps.all-templates-list.outputs.all_files }} | tee -a $GITHUB_OUTPUT
+          echo ALL_FILES=$ALL_FILES
+          echo ALL_CHANGED_FILES=$ALL_CHANGED_FILES
+          if [ $ALL_CHANGED_FILES = '[]' ]; then
+            echo TEMPLATES_LIST="$ALL_FILES" | tee -a $GITHUB_OUTPUT
+          else
+            echo TEMPLATES_LIST="$ALL_CHANGED_FILES" | tee -a $GITHUB_OUTPUT
+          fi
     outputs:
       templates_list: ${{steps.check-templates-list.outputs.TEMPLATES_LIST}}
 
