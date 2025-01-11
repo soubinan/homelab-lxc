@@ -1,0 +1,62 @@
+# This is a basic workflow to help you get started with Actions
+
+name: BLANK TEST
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+
+      - name: EEE
+        id: eee
+        run: |
+          echo all_changed_files="templates/infisical.yml templates/omada.yml" | tee -a $GITHUB_OUTPUT
+        if: ${{github.event_name}} != 'pull_request'
+
+      - name: List changed templates
+        id: all-changed-templates-list
+        uses: tj-actions/changed-files@v45
+        with:
+          files: templates/**
+        if: ${{github.event_name}} == 'pull_request'
+
+      - name: List all templates
+        id: all-templates-list
+        run: |
+          sudo apt-get install -y jq
+          echo all_files="$(printf '%s' "$(ls templates/*)" | jq -Rsc 'split("\n")')" | tee -a $GITHUB_OUTPUT
+          echo all_changed_files=$(echo -n ${{ steps.eee.outputs.all_changed_files }} | jq -Rsc 'split(" ")') | tee -a $GITHUB_OUTPUT
+        if: ${{github.event_name}} != 'pull_request'
+
+      - name: Check templates list
+        id: check-templates-list
+        run: |
+          echo all_files=${{ steps.all-templates-list.outputs.all_files }}
+          echo all_changed_files=${{ steps.all-templates-list.outputs.all_changed_files }}
+          echo TEMPLATES_LIST=${{ (steps.all-templates-list.outputs.all_changed_files != '[]') && steps.all-templates-list.outputs.all_changed_files || steps.all-templates-list.outputs.all_files }} | tee -a $GITHUB_OUTPUT
+
+      - name: Print templates list
+        run: |
+          echo "TEMPLATES_LIST=${{ steps.check-templates-list.outputs.TEMPLATES_LIST}}"
