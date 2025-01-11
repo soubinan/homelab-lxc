@@ -1,6 +1,6 @@
 metadata:
   name: Omada
-  get_version_command: curl -fsSL "https://www.tp-link.com/en/support/download/omada-software-controller/"|grep -io "https.*Omada_SDN_Controller.*linux_x64.deb"|head -n1|grep -oE "v[0-9]+.[0-9]+.[0-9]+"
+  get_version_command: "curl -fsSLX POST --url 'https://support.omadanetworks.com/api/v1/search/tourist/searchResource' -H 'accept: application/json' -H 'content-type: application/json' -d @assets/omada-post-data.json |jq -r '.result.download.content[].url'|grep -oE 'v[0-9]+(.[0-9]+)*'"
   description: TP-Link Omada SDN Controller Solution offers centralized and efficient management for gateways, switches, and wAP.
   categories: SDN, Networks
   project_source: https://www.tp-link.com/en/support/download/omada-software-controller
@@ -10,35 +10,12 @@ metadata:
     - amd64
 instructions:
   files:
-    - path: /tmp/data.json
-      generator: dump
-      mode: "0777"
-      content: |-
-        {
-            "pageIndex": 0,
-            "pageSize": 1,
-            "sortField": "",
-            "sortOrder": "DESC",
-            "keyword": ".deb",
-            "siteId": 1,
-            "siteCode": "en",
-            "resourceType": "download",
-            "typeIdList": [],
-            "documentResourceTypeIdList": [],
-            "downloadsResourceTypeIdList": [],
-            "bulletinsResourceTypeIdList": [],
-            "documentTagIdList": [],
-            "downloadTagIdList": [],
-            "bulletinsTagIdList": [],
-            "communityCategories": [],
-            "communityTagNames": [],
-            "suitableModelList": [
-                "Omada Software Controller",
-                "Omada Software Controller V5"
-            ]
-        }
+    - path: /var/omada/data.json
+      generator: copy
+      source: assets/omada-post-data.json
 
   packages:
+    - jq
     - jsvc
     - nvidia-openjdk-8-jre
     - libssl-dev
@@ -55,7 +32,7 @@ instructions:
         wget -qL https://repo.mongodb.org/apt/debian/dists/buster/mongodb-org/4.4/main/binary-amd64/mongodb-org-server_4.4.29_amd64.deb
         apt-get install -fy ./mongodb-org-server*_amd64.deb
 
-        wget -qL $(curl -fsSLX POST --url 'https://support.omadanetworks.com/api/v1/search/tourist/searchResource' -H 'accept: application/json' -H 'content-type: application/json' -d @data.json |jq -r '.result.download.content[].url')
+        wget -qL $(curl -fsSLX POST --url 'https://support.omadanetworks.com/api/v1/search/tourist/searchResource' -H 'accept: application/json' -H 'content-type: application/json' -d @/var/omada/data.json |jq -r '.result.download.content[].url')
         apt-get install -fy ./*Omada_SDN_Controller*.deb
 
         systemctl enable mongod.service
