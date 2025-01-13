@@ -25,6 +25,18 @@ instructions:
         HOSTNAME="127.0.0.1"
         DEFAULT_COLOR_SCHEME="dark"
 
+    - path: /usr/bin/homarr
+      generator: dump
+      mode: "0550"
+      content: |-
+        #!/bin/bash
+
+        set -a
+        . /opt/homarr/settings.env
+        set +a
+
+        node /app/cli/cli.js "$@"'
+
     - path: /etc/systemd/system/homarr.service
       generator: dump
       mode: "0440"
@@ -332,6 +344,8 @@ instructions:
         rm -rf node_modules
         cp -r .next/standalone/* .
         chmod +x scripts/run.sh
+        cd /app/cli && yarn --immutable
+        yarn cache clean
         touch .installed__
 
         systemctl enable homarr.service
