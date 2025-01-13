@@ -1053,8 +1053,8 @@ printf '| %-10s | %-20s |\\n' 'Ports' 'Process'
 printf '+------------+----------------------+\\n'
 
 while read -r port; do
-    application=$(ss -lptn "sport == :$port" | awk '{print $6}' | cut -d'"' -f2)
-    printf '| %-10s | %-20s |\\n' \$port $application
+    application=$(ss -lptn "sport == :$port" | grep -vE 'Netid|Local' | awk '{print $6}' | cut -d'"' -f2)
+    printf '| %-10s | %-20s |\\n' $port $application
 done <<< $ports
 
 # Print table footer
@@ -1135,10 +1135,10 @@ set -eux
 
 tee /usr/sbin/systemctl <<EOF
 #!/bin/bash
-if [[ "\$1" == "start" || "\$1" == "restart" || "\$1" == "try-restart" || "\$1" == "reload" || "\$1" == "stop" ]]; then
-    echo "Skipping \$1 command for \$2 as requested by policy."
+if [[ "$1" == "start" || "$1" == "restart" || "$1" == "try-restart" || "$1" == "reload" || "$1" == "stop" ]]; then
+    echo "Skipping $1 command for $2 as requested by policy."
 else
-    /usr/bin/systemctl "\$@"
+    /usr/bin/systemctl "$@"
 fi
 EOF
 
