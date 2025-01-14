@@ -1038,7 +1038,7 @@ _welcome_msg_script = """\
 #!/bin/bash
 
 ports=$(ss -ptln "sport > :1023 or sport = :80 or sport = :443" | grep -vE 'systemd|127.0.0.|%lo|::1|Netid|Local' | awk '{print $4}' | awk -F: '{print $NF}' | sort -u)
-ips=$(ip a|grep 'inet '|awk '{print $2}')
+ips=$(ip a|grep 'inet '|grep -v '127.0.0'|awk '{print $2}')
 
 printf '\\n'
 printf '+-----------------------------------+\\n'
