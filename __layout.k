@@ -1037,7 +1037,7 @@ _welcome_msg_cron = """\
 _welcome_msg_script = """\
 #!/bin/bash
 
-ports=$(ss -ptln "sport > :1023 or sport = :80 or sport = :443" | grep -vE 'systemd|127.0.0.|%lo|::1|Netid|Local' | awk '{print $4}' | awk -F: '{print $NF}' | sort -u)
+ports=$(ss -ptln "sport > :1023 or sport = :80 or sport = :443" | grep -vE 'systemd|127.0.0.|%lo|::1|Netid|Local|next-router' | awk '{print $4}' | awk -F: '{print $NF}' | sort -u)
 ips=$(ip a|grep 'inet '|grep -v '127.0.0'|awk '{print $2}')
 
 printf '\\n'
@@ -1131,14 +1131,15 @@ rm /etc/*-
 """
 _script_preparations = """\
 #!/bin/bash
-set -eux
 
 tee /usr/sbin/systemctl <<EOF
 #!/bin/bash
-if [[ "$1" == "start" || "$1" == "restart" || "$1" == "try-restart" || "$1" == "reload" || "$1" == "stop" ]]; then
-    echo "Skipping $1 command for $2 as requested by policy."
+
+if [[ "\$1" == "start" || "\$1" == "restart" || "\$1" == "try-restart" || "\$1" == "reload" || "\$1" == "stop" ]]; then
+    echo "Skipping \$1 command for \$2 as requested by policy."
 else
-    /usr/bin/systemctl "$@"
+    echo "/usr/bin/systemctl \$@"
+    /usr/bin/systemctl "\$@"
 fi
 EOF
 
