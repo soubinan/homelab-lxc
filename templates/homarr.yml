@@ -35,7 +35,7 @@ instructions:
         . /opt/homarr/settings.env
         set +a
 
-        node /app/cli/cli.js "$@"'
+        node /app/cli/cli.js "$@"
 
     - path: /etc/systemd/system/homarr.service
       generator: dump
@@ -340,12 +340,14 @@ instructions:
         cp tsconfig.json migrate/tsconfig.json
         touch migrate/yarn.lock
         yarn db:migrate
+        cd /app/cli
+        yarn --immutable
+        yarn cache clean
+        cd /app
         yarn cache clean
         rm -rf node_modules
         cp -r .next/standalone/* .
         chmod +x scripts/run.sh
-        cd /app/cli && yarn --immutable
-        yarn cache clean
         touch .installed__
 
         systemctl enable homarr.service
