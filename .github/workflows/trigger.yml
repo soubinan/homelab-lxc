@@ -20,8 +20,11 @@ on:
         description: "Log level"
         required: true
         default: "warning"
-      tags:
-        description: "Manual run"
+        type: choice
+        options:
+          - warning
+          - info
+          - debug
 
 jobs:
   init:
