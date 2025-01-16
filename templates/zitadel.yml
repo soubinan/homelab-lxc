@@ -76,7 +76,7 @@ instructions:
 
         mkdir -p /opt/zitadel
         echo "ZITADEL_DATABASE_POSTGRES_USER_PASSWORD=$(/usr/bin/openssl rand -hex 16)" >> /opt/zitadel/.env
-        echo "ZITADEL_MASTERKEY=$(/usr/bin/openssl rand -hex 32)" >> /opt/zitadel/.env
+        echo "ZITADEL_MASTERKEY=$(/usr/bin/openssl rand -hex 16)" >> /opt/zitadel/.env
 
         PG_VERSION=$(ls -1 /etc/postgresql)
 
