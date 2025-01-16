@@ -27,7 +27,7 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: templates/**
-        if: ${{github.event_name}} == 'pull_request'
+        if: ${{github.event_name == 'pull_request'}}
 
       - name: List all templates
         id: all-templates-list
