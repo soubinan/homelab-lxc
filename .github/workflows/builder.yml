@@ -73,8 +73,8 @@ jobs:
       - name: Check necessary steps
         id: validity-checks
         run: |
-          echo "IS_BUILDABLE=${{github.event_name != 'schedule' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')}}" >> $GITHUB_OUTPUT
-          echo "IS_PUBLISHABLE=${{inputs.branch_name == 'test' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule') || (inputs.branch_name == 'main' && inputs.is_merged == true)}}" >> $GITHUB_OUTPUT
+          echo "IS_BUILDABLE=${{github.event_name == 'pull_request' || (steps.version-check.outputs.SUBMITTED_BUILD_ID != steps.version-check.outputs.CHECKED_BUILD_ID && github.event_name == 'schedule')}}" >> $GITHUB_OUTPUT
+          echo "IS_PUBLISHABLE=${{inputs.branch_name == 'test' || (inputs.branch_name == 'main' && inputs.is_merged == true)}}" >> $GITHUB_OUTPUT
 
       - name: Check out repository
         uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
           pwd && ls -lash
 
       - name: Publish Image files
-        if: ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -124,7 +124,7 @@ jobs:
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish Image metadata
-        if: ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
         run: |
           CATEGORIES_STR="${{needs.init.outputs.categories}}"
           CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g' | sed -E 's/ *, */","/g')
