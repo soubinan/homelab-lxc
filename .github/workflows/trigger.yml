@@ -14,17 +14,6 @@ on:
       - "./templates/*"
   schedule:
     - cron: "0 0 */7 * *"
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: "Log level"
-        required: true
-        default: "warning"
-        type: choice
-        options:
-          - warning
-          - info
-          - debug
 
 jobs:
   init:
@@ -38,7 +27,7 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: templates/**
-        if: ${{github.event_name}} == 'pull_request'
+        if: ${{github.event_name == 'pull_request'}}
 
       - name: List all templates
         id: all-templates-list
