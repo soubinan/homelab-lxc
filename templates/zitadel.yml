@@ -81,10 +81,11 @@ instructions:
         PG_VERSION=$(ls -1 /etc/postgresql)
 
         cat <<EOF > /etc/postgresql/$PG_VERSION/main/pg_hba.conf
-        local   all             postgres                                         peer
+        local   all             postgres                                         trust
+        host    all             postgres                 127.0.0.1/32            trust
         local   zitadel         zitadel                                          peer
         local   all             all                                              peer
-        host    zitadel         zitadel,postgres         127.0.0.1/32            trust
+        host    zitadel         zitadel                  127.0.0.1/32            trust
         host    all             all                      127.0.0.1/32            scram-sha-256
         host    all             all                      ::1/128                 scram-sha-256
         local   replication     all                                              peer
