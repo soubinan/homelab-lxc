@@ -78,10 +78,10 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@v4
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true"
 
       - name: Install required tools
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true"
         run: |
           sudo apt-get update -y
           sudo apt-get install -y debootstrap squashfs-tools wget unzip python3 python3-pip
@@ -95,12 +95,12 @@ jobs:
           sudo -v ; wget -q https://kcl-lang.io/script/install-cli.sh -O - | sudo bash
 
       - name: Create Distrobuilder LXC template file
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true"
         run: |
           kcl run ${{github.workspace}}/__layout.k -D input=${{github.workspace}}/${{inputs.config_path}} -o /tmp/${{needs.init.outputs.app_name}}.build
 
       - name: Build Image
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true"
         run: |
           sudo distrobuilder --cache-dir /tmp/cache/${{needs.init.outputs.app_name}} build-lxc /tmp/${{needs.init.outputs.app_name}}.build -o image.serial="${{needs.init.outputs.app_version}}" -o image.architecture=${{matrix.architectures}} /tmp/output/${{needs.init.outputs.app_name}}/
           mv /tmp/output/${{needs.init.outputs.app_name}}/rootfs.tar.xz ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz
@@ -109,7 +109,7 @@ jobs:
           pwd && ls -lash
 
       - name: Publish Image files
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true" && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == "true"
         run: |
           cat << EOF > /tmp/rclone.conf
           $RCLONE_CONFIG
@@ -124,7 +124,7 @@ jobs:
           RCLONE_CONFIG_PASS: ${{secrets.RCLONE_CONFIG_PASS}}
 
       - name: Publish Image metadata
-        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == true && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == true
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE}} == "true" && ${{steps.validity-checks.outputs.IS_PUBLISHABLE}} == "true"
         run: |
           CATEGORIES_STR="${{needs.init.outputs.categories}}"
           CATEGORIES_FMT=$(echo "[\"$CATEGORIES_STR\"]" | sed -E 's/^\["[ ,]+/["/g' | sed -E 's/[ ,]+"]$/"]/g' | sed -E 's/ *, */","/g')
