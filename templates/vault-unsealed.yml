@@ -1,0 +1,211 @@
+metadata:
+  name: Vault-Unsealed
+  get_version_command: curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name'
+  description: Vault is a free and source-available secrets management tool / secrets store.
+  categories: Secrets management, Security
+  project_source: https://github.com/hashicorp/vault
+  distribution: debian
+  release: bookworm
+  architectures:
+    - amd64
+instructions:
+  files:
+    - path: /opt/certs/ca.cnf
+      generator: copy
+      source: assets/certificates/ca.cnf
+
+    - path: /opt/certs/server.cnf
+      generator: copy
+      source: assets/certificates/server.cnf
+
+    - path: /opt/vault/init.sh
+      generator: dump
+      mode: "0755"
+      content: |-
+        #!/bin/bash
+
+        vault operator init > /var/vault/init.output
+        cat /var/vault/init.output | grep -E 'Initial Root Token:' | awk '{print $4}' > /var/vault/keys
+        cat /var/vault/init.output | grep -E 'Unseal Key' | awk '{print $4}' > /var/vault/token
+
+    - path: /opt/vault/unseal.sh
+      generator: dump
+      mode: "0755"
+      content: |-
+        #!/bin/bash
+
+        i=0
+        required_keys_nb=3
+        path=${1:-'/var/vault/keys'}
+        numbers=(1 2 3 4 5)
+        selected_numbers=(0)
+        selected_keys=()
+
+        select_key() {
+          while [[ "$i" -lt "$required_keys_nb" ]]; do
+            local random_number=0
+
+            while [[ "${selected_numbers[*]}" =~ "$random_number" ]]; do
+                index=$((RANDOM % ${#numbers[@]}))
+                random_number=${numbers[$index]}
+            done
+
+            selected_numbers+=($random_number)
+            numbers=(${numbers[@]/$random_number/})
+            selected_keys+=($(sed -n "${random_number}p" $path))
+
+            ((i++))
+          done
+
+          echo ${selected_keys[@]}
+        }
+
+        keys=$(select_key)
+
+        vault operator unseal "$(echo $keys| awk '{print $1}')"
+        vault operator unseal "$(echo $keys| awk '{print $2}')"
+        vault operator unseal "$(echo $keys| awk '{print $3}')"
+
+    - path: /etc/vault.d/vault.env
+      generator: dump
+      content: |-
+        VAULT_ADDR=https://127.0.0.1:8200
+        VAULT_SKIP_VERIFY=true
+        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+
+    - path: /etc/environment
+      generator: dump
+      content: |-
+        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+
+    - path: /etc/vault.d/vault.hcl
+      generator: dump
+      content: |-
+        ui            = true
+        api_addr      = "https://127.0.0.1:8200"
+        disable_mlock = true
+
+        storage "file" {
+          path = "/opt/vault/data"
+        }
+
+        listener "tcp" {
+          address       = "0.0.0.0:8200"
+          tls_cert_file = "/opt/certs/vault.crt"
+          tls_key_file  = "/opt/certs/server.key"
+        }
+
+    - path: /etc/systemd/system/vault-init.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description="HashiCorp Vault - Init daemon"
+        Requires=network-online.target
+        After=network-online.target
+        ConditionPathExists=!/var/vault/.initialized__
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/vault.d/vault.env
+        RemainAfterExit=yes
+        WorkingDirectory=/opt/vault
+        User=vault
+        ExecStart=/opt/vault/init.sh
+        ExecStart=/usr/bin/touch /var/vault/.initialized__
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - path: /etc/systemd/system/vault-unseal.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description="HashiCorp Vault - Unseal daemon"
+        Requires=network-online.target
+        After=network-online.target
+        ConditionPathExists=/var/vault/.initialized__
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/vault.d/vault.env
+        RemainAfterExit=yes
+        WorkingDirectory=/opt/vault
+        User=vault
+        ExecStart=/opt/vault/unseal.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - path: /etc/systemd/system/vault.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description="HashiCorp Vault - A tool for managing secrets"
+        Documentation=https://developer.hashicorp.com/vault/docs
+        Requires=network-online.target vault-unseal.service
+        After=network-online.target
+        ConditionFileNotEmpty=/etc/vault.d/vault.hcl
+
+        [Service]
+        Type=notify
+        EnvironmentFile=/etc/vault.d/vault.env
+        User=vault
+        Group=vault
+        ProtectSystem=full
+        ProtectHome=read-only
+        PrivateTmp=yes
+        PrivateDevices=yes
+        SecureBits=keep-caps
+        AmbientCapabilities=CAP_IPC_LOCK
+        CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+        NoNewPrivileges=yes
+        PIDFile=/opt/vault/vault.pid
+        ExecStart=/usr/bin/vault server -config /etc/vault.d/vault.hcl
+        ExecReload=/bin/kill --signal HUP $MAINPID
+        KillMode=process
+        KillSignal=SIGINT
+        Restart=on-failure
+        RestartSec=5
+        TimeoutStopSec=30
+        StartLimitInterval=60
+        StartLimitIntervalSec=60
+        StartLimitBurst=3
+        LimitNOFILE=65536
+        LimitMEMLOCK=infinity
+        LimitCORE=0
+
+        [Install]
+        WantedBy=multi-user.target
+
+  actions:
+    - trigger: post-files
+      pongo: true
+      action: |-
+        #!/bin/bash
+        set -eux
+
+        echo "vm.swappiness = 0" >> /etc/sysctl.conf
+        sysctl -p
+
+        useradd vault
+        usermod -aG vault vault
+
+        wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
+        apt-get update
+        echo N|apt-get install -y vault
+
+        mkdir /var/vault
+        chown vault:vault -R /opt/vault /var/vault
+
+        touch /opt/certs/index.txt
+        echo '01' > /opt/certs/serial.txt
+        cd /opt/certs
+        openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out vault.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out vault.crt -infiles vault.csr
+
+        systemctl enable vault.service
