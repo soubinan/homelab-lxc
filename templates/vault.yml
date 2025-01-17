@@ -23,12 +23,12 @@ instructions:
       content: |-
         VAULT_ADDR=https://127.0.0.1:8200
         VAULT_SKIP_VERIFY=true
-        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+        VAULT_CAPATH=/opt/certs/cacert.pem
 
     - path: /etc/environment
       generator: dump
       content: |-
-        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+        VAULT_CAPATH=/opt/certs/cacert.pem
 
     - path: /etc/vault.d/vault.hcl
       generator: dump
@@ -105,10 +105,9 @@ instructions:
         wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
         apt-get update
-        echo N|apt-get install -y vault
+        echo -e 'N\nN\n'|apt-get install -y vault
 
         mkdir /var/vault
-        chown vault:vault -R /opt/vault /var/vault
 
         touch /opt/certs/index.txt
         echo '01' > /opt/certs/serial.txt
@@ -116,5 +115,7 @@ instructions:
         openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
         openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out vault.csr -outform PEM
         openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out vault.crt -infiles vault.csr
+
+        chown vault:vault -R /opt /var/vault
 
         systemctl enable vault.service

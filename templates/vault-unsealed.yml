@@ -71,12 +71,12 @@ instructions:
       content: |-
         VAULT_ADDR=https://127.0.0.1:8200
         VAULT_SKIP_VERIFY=true
-        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+        VAULT_CAPATH=/opt/certs/cacert.pem
 
     - path: /etc/environment
       generator: dump
       content: |-
-        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+        VAULT_CAPATH=/opt/certs/cacert.pem
 
     - path: /etc/vault.d/vault.hcl
       generator: dump
@@ -208,4 +208,6 @@ instructions:
         openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out vault.csr -outform PEM
         openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out vault.crt -infiles vault.csr
 
+        systemctl enable vault-init.service
+        systemctl enable vault-unseal.service
         systemctl enable vault.service
