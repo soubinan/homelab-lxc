@@ -11,8 +11,31 @@ metadata:
 instructions:
   files:
     - path: /var/omada/data.json
-      generator: copy
-      source: assets/omada-post-data.json
+      generator: dump
+      content: |-
+        {
+            "pageIndex": 0,
+            "pageSize": 1,
+            "sortField": "",
+            "sortOrder": "DESC",
+            "keyword": ".deb",
+            "siteId": 1,
+            "siteCode": "en",
+            "resourceType": "download",
+            "typeIdList": [],
+            "documentResourceTypeIdList": [],
+            "downloadsResourceTypeIdList": [],
+            "bulletinsResourceTypeIdList": [],
+            "documentTagIdList": [],
+            "downloadTagIdList": [],
+            "bulletinsTagIdList": [],
+            "communityCategories": [],
+            "communityTagNames": [],
+            "suitableModelList": [
+                "Omada Software Controller",
+                "Omada Software Controller V5"
+            ]
+        }
 
   packages:
     - jq
