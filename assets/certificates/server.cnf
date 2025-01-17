@@ -1,0 +1,27 @@
+RANDFILE = /opt/certs/.rand
+
+[ req ]
+default_bits       = 2048
+default_keyfile    = /opt/certs/server.key
+distinguished_name = server_distinguished_name
+req_extensions     = server_req_extensions
+string_mask        = utf8only
+prompt             = no
+
+[ server_distinguished_name ]
+countryName            = CA
+stateOrProvinceName    = Quebec
+localityName           = Montreal
+organizationName       = SoubiLabs
+organizationalUnitName = LXC-Images
+commonName             = localhost
+
+[ server_req_extensions ]
+subjectKeyIdentifier = hash
+basicConstraints     = CA:FALSE
+keyUsage             = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName       = @alternate_names
+nsComment            = "OpenSSL Generated Certificate"
+
+[ alternate_names ]
+IP.1 = 127.0.0.1
