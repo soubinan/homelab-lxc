@@ -10,35 +10,41 @@ metadata:
     - amd64
 instructions:
   files:
-    - path: /opt/certs/rootCA.config
+    - path: /opt/certs/ca.cnf
       generator: copy
-      source: assets/rootCA.config
+      source: assets/certificates/ca.cnf
 
-    - path: /opt/certs/csr.config
+    - path: /opt/certs/server.cnf
       generator: copy
-      source: assets/csr.config
+      source: assets/certificates/server.cnf
 
-    - path: /opt/certs/crt.config
-      generator: copy
-      source: assets/crt.config
+    - path: /etc/vault.d/vault.env
+      generator: dump
+      content: |-
+        VAULT_ADDR=https://127.0.0.1:8200
+        VAULT_SKIP_VERIFY=true
+        VAULT_CAPATH=/opt/certs/ca/cacert.pem
 
-    - path: /opt/vault/.config
+    - path: /etc/environment
+      generator: dump
+      content: |-
+        VAULT_CAPATH=/opt/certs/ca/cacert.pem
+
+    - path: /etc/vault.d/vault.hcl
       generator: dump
       content: |-
         ui            = true
-        cluster_addr  = "https://127.0.0.1:8201"
         api_addr      = "https://127.0.0.1:8200"
         disable_mlock = true
 
-        storage "raft" {
+        storage "file" {
           path = "/opt/vault/data"
-          node_id = "vault01"
         }
 
         listener "tcp" {
           address       = "0.0.0.0:8200"
-          tls_cert_file = "/etc/ssl/private/vault.crt"
-          tls_key_file  = "/etc/ssl/private/vault.key"
+          tls_cert_file = "/opt/certs/vault.crt"
+          tls_key_file  = "/opt/certs/server.key"
         }
 
     - path: /etc/systemd/system/vault.service
@@ -46,14 +52,39 @@ instructions:
       mode: "0440"
       content: |-
         [Unit]
-        Description=Vault - Secret management
-        After=network.target
+        Description="HashiCorp Vault - A tool for managing secrets"
+        Documentation=https://developer.hashicorp.com/vault/docs
+        Requires=network-online.target
+        After=network-online.target
+        ConditionFileNotEmpty=/etc/vault.d/vault.hcl
 
         [Service]
-        Type=simple
+        Type=notify
+        EnvironmentFile=/etc/vault.d/vault.env
+        User=vault
+        Group=vault
+        ProtectSystem=full
+        ProtectHome=read-only
+        PrivateTmp=yes
+        PrivateDevices=yes
+        SecureBits=keep-caps
+        AmbientCapabilities=CAP_IPC_LOCK
+        CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+        NoNewPrivileges=yes
         PIDFile=/opt/vault/vault.pid
-        ExecStart=/usr/bin/vault server -config /opt/vault/.config
-        Restart=always
+        ExecStart=/usr/bin/vault server -config /etc/vault.d/vault.hcl
+        ExecReload=/bin/kill --signal HUP $MAINPID
+        KillMode=process
+        KillSignal=SIGINT
+        Restart=on-failure
+        RestartSec=5
+        TimeoutStopSec=30
+        StartLimitInterval=60
+        StartLimitIntervalSec=60
+        StartLimitBurst=3
+        LimitNOFILE=65536
+        LimitMEMLOCK=infinity
+        LimitCORE=0
 
         [Install]
         WantedBy=multi-user.target
@@ -65,15 +96,25 @@ instructions:
         #!/bin/bash
         set -eux
 
+        echo "vm.swappiness = 0" >> /etc/sysctl.conf
+        sysctl -p
+
+        useradd vault
+        usermod -aG vault vault
+
         wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
-        apt-get update && apt-get install vault
+        apt-get update
+        echo N|apt-get install -y vault
 
-        mkdir -p /opt/vault/data
+        mkdir /var/vault
+        chown vault:vault -R /opt/vault /var/vault
 
-        openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-        openssl genrsa -out /etc/ssl/private/vault.key 2048
-        openssl req -new -key /etc/ssl/private/vault.key -out /etc/ssl/private/vault.csr -config /opt/certs/csr.config
-        openssl x509 -req -in /etc/ssl/private/vault.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/vault.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+        touch /opt/certs/index.txt
+        echo '01' > /opt/certs/serial.txt
+        cd /opt/certs
+        openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out vault.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out vault.crt -infiles vault.csr
 
         systemctl enable vault.service
