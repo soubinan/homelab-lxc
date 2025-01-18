@@ -25,8 +25,8 @@ instructions:
         #!/bin/bash
 
         vault operator init > /var/vault/init.output
-        cat /var/vault/init.output | grep -E 'Initial Root Token:' | awk '{print $4}' > /var/vault/keys
-        cat /var/vault/init.output | grep -E 'Unseal Key' | awk '{print $4}' > /var/vault/token
+        cat /var/vault/init.output | grep -E 'Initial Root Token:' | awk '{print $4}' > /var/vault/token
+        cat /var/vault/init.output | grep -E 'Unseal Key' | awk '{print $4}' > /var/vault/keys
 
     - path: /opt/vault/unseal.sh
       generator: dump
@@ -101,9 +101,11 @@ instructions:
       content: |-
         [Unit]
         Description="HashiCorp Vault - Init daemon"
-        Requires=network-online.target
-        After=network-online.target
-        ConditionPathExists=!/var/vault/.initialized__
+        Requires=network-online.target vault.service
+        After=network-online.target vault.service
+        BindsTo=vault.service
+        ConditionFileNotEmpty=!/var/vault/keys
+        ConditionFileNotEmpty=!/var/vault/token
 
         [Service]
         Type=oneshot
@@ -123,9 +125,9 @@ instructions:
       content: |-
         [Unit]
         Description="HashiCorp Vault - Unseal daemon"
-        Requires=network-online.target
-        After=network-online.target
-        ConditionPathExists=/var/vault/.initialized__
+        Requires=network-online.target vault.service
+        After=network-online.target vault.service
+        BindsTo=vault.service
 
         [Service]
         Type=oneshot
@@ -133,7 +135,9 @@ instructions:
         RemainAfterExit=yes
         WorkingDirectory=/opt/vault
         User=vault
+        ExecStart=/usr/bin/cat /var/vault/.initialized__
         ExecStart=/opt/vault/unseal.sh
+        Restart=on-failure
 
         [Install]
         WantedBy=multi-user.target
@@ -145,7 +149,7 @@ instructions:
         [Unit]
         Description="HashiCorp Vault - A tool for managing secrets"
         Documentation=https://developer.hashicorp.com/vault/docs
-        Requires=network-online.target vault-unseal.service
+        Requires=network-online.target
         After=network-online.target
         ConditionFileNotEmpty=/etc/vault.d/vault.hcl
 
@@ -196,17 +200,19 @@ instructions:
         wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{image.release}} main" | tee /etc/apt/sources.list.d/hashicorp.list
         apt-get update
-        echo N|apt-get install -y vault
+        echo -e 'N\nN\n'|apt-get install -y vault
 
         mkdir /var/vault
-        chown vault:vault -R /opt/vault /var/vault
 
+        touch /var/vault/{keys,token}
         touch /opt/certs/index.txt
         echo '01' > /opt/certs/serial.txt
         cd /opt/certs
         openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
         openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out vault.csr -outform PEM
         openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out vault.crt -infiles vault.csr
+
+        chown vault:vault -R /opt /var/vault
 
         systemctl enable vault-init.service
         systemctl enable vault-unseal.service
