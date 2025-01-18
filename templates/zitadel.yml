@@ -2,7 +2,7 @@ metadata:
   name: Zitadel
   get_version_command: curl -s https://api.github.com/repos/zitadel/zitadel/releases/latest | jq -r '.tag_name'
   description: Zitadel is a free and open-source secure authentication management tool.
-  categories: IAM, Authentication
+  categories: Identity, IAM, IDP, Security
   project_source: https://github.com/zitadel/zitadel
   distribution: debian
   release: bookworm
@@ -10,17 +10,13 @@ metadata:
     - amd64
 instructions:
   files:
-    - path: /opt/certs/rootCA.config
+    - path: /opt/certs/ca.cnf
       generator: copy
-      source: assets/rootCA.config
+      source: assets/certificates/ca.cnf
 
-    - path: /opt/certs/csr.config
+    - path: /opt/certs/server.cnf
       generator: copy
-      source: assets/csr.config
-
-    - path: /opt/certs/crt.config
-      generator: copy
-      source: assets/crt.config
+      source: assets/certificates/server.cnf
 
     - path: /opt/zitadel/.config
       generator: dump
@@ -29,8 +25,8 @@ instructions:
         ExternalSecure: true
         TLS:
           Enabled: true
-          KeyPath: /etc/ssl/private/zitadel.key
-          CertPath: /etc/ssl/private/zitadel.crt
+          KeyPath: /opt/certs/server.key
+          CertPath: /opt/certs/zitadel.crt
 
     - path: /opt/zitadel/.env
       generator: dump
@@ -93,10 +89,12 @@ instructions:
         host    replication     all                      ::1/128                 scram-sha-256
         EOF
 
-        openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-        openssl genrsa -out /etc/ssl/private/zitadel.key 2048
-        openssl req -new -key /etc/ssl/private/zitadel.key -out /etc/ssl/private/zitadel.csr -config /opt/certs/csr.config
-        openssl x509 -req -in /etc/ssl/private/zitadel.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/zitadel.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+        touch /opt/certs/index.txt
+        echo '01' > /opt/certs/serial.txt
+        cd /opt/certs
+        openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out zitadel.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out zitadel.crt -infiles zitadel.csr
 
         systemctl enable postgresql.service
         systemctl enable zitadel.service
