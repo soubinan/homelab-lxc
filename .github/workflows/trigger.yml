@@ -26,7 +26,8 @@ jobs:
         id: all-changed-templates-list
         uses: tj-actions/changed-files@v45
         with:
-          files: templates/**
+          files: |
+            templates/**
         if: ${{github.event_name == 'pull_request'}}
 
       - name: List all templates
