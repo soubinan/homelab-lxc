@@ -54,7 +54,7 @@ instructions:
   repositories:
     - name: nodejs
       url: |-
-        deb http://deb.nodesource.com/node_20.x nodistro main
+        deb http://deb.nodesource.com/node_22.x nodistro main
       key: |-
         -----BEGIN PGP PUBLIC KEY BLOCK-----
 
