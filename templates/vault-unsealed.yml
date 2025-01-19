@@ -8,6 +8,11 @@ metadata:
   release: bookworm
   architectures:
     - amd64
+  help_message: |-
+    This Vault installation is automatically unsealed
+    The mechanism is using vault-init and vault-unseal systemd services
+
+    Run: journalctl -fxeu vault-init and journalctl -fxeu vault-unseal for more details
 instructions:
   files:
     - path: /opt/certs/ca.cnf
