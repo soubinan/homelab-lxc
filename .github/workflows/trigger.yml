@@ -7,8 +7,6 @@ on:
       - synchronize
       - reopened
       - closed
-    branches:
-      - main
     paths:
       - ".github/workflows/trigger.yml"
       - "./templates/*"
