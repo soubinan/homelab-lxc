@@ -85,8 +85,8 @@ instructions:
         echo '01' > /opt/certs/serial.txt
         cd /opt/certs
         openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
-        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out Keycloak.csr -outform PEM
-        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out Keycloak.crt -infiles Keycloak.csr
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out keycloak.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out keycloak.crt -infiles keycloak.csr
 
 
         mkdir -p /opt/keycloak

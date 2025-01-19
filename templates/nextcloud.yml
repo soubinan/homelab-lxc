@@ -10,9 +10,13 @@ metadata:
     - amd64
 instructions:
   files:
-    - path: /opt/certs/rootCA.config
+    - path: /opt/certs/ca.cnf
       generator: copy
-      source: assets/rootCA.config
+      source: assets/certificates/ca.cnf
+
+    - path: /opt/certs/server.cnf
+      generator: copy
+      source: assets/certificates/server.cnf
 
     - path: /opt/ssl.conf
       generator: dump
