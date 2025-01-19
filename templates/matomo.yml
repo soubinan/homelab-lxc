@@ -8,6 +8,11 @@ metadata:
   release: bookworm
   architectures:
     - amd64
+  help_message: |-
+    Notification message:
+
+    Please ignore the file matching error during the setup.
+    It is expected to be there because of the way the image is built.
 instructions:
   files:
     - path: /opt/certs/ca.cnf

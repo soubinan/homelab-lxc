@@ -8,6 +8,10 @@ metadata:
   release: bookworm
   architectures:
     - amd64
+  help_message: |-
+    Required configurations updates:
+
+    Update the hostname in /opt/keycloak/conf/keycloak.conf to match externally used one.
 instructions:
   files:
     - path: /etc/keycloak/creds.env
