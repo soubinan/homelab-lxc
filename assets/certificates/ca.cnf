@@ -1,0 +1,60 @@
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+default_days     = 3650
+default_crl_days = 90
+default_md       = sha256
+preserve         = no
+x509_extensions  = ca_extensions
+email_in_dn      = no
+copy_extensions  = copy
+base_dir         = /opt/certs
+certificate      = $base_dir/cacert.pem
+private_key      = $base_dir/cakey.pem
+certs            = $base_dir
+new_certs_dir    = $base_dir
+database         = $base_dir/index.txt
+serial           = $base_dir/serial.txt
+RANDFILE         = $base_dir/.rand
+policy           = signing_policy
+unique_subject   = no
+
+[ req ]
+default_bits       = 4096
+default_keyfile    = cakey.pem
+distinguished_name = ca_distinguished_name
+x509_extensions    = ca_extensions
+string_mask        = utf8only
+prompt             = no
+req_extensions     = signing_req
+
+[ ca_distinguished_name ]
+countryName            = CA
+stateOrProvinceName    = Quebec
+localityName           = Montreal
+organizationName       = SoubiLabs
+organizationalUnitName = LXC BUILDER
+commonName             = lxc-images.soubilabs.xyz
+emailAddress           = lxc-images@soubiLabs.xyz
+
+[ ca_extensions ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always, issuer
+basicConstraints       = critical, CA:true
+keyUsage               = keyCertSign, cRLSign
+
+[ signing_policy ]
+countryName            = optional
+stateOrProvinceName    = optional
+localityName           = optional
+organizationName       = optional
+organizationalUnitName = optional
+commonName             = supplied
+emailAddress           = optional
+
+[ signing_req ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid,issuer
+basicConstraints       = CA:FALSE
+keyUsage               = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment

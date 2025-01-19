@@ -62,17 +62,13 @@ instructions:
         [Install]
         WantedBy=multi-user.target
 
-    - path: /opt/certs/rootCA.config
+    - path: /opt/certs/ca.cnf
       generator: copy
-      source: assets/rootCA.config
+      source: assets/certificates/ca.cnf
 
-    - path: /opt/certs/csr.config
+    - path: /opt/certs/server.cnf
       generator: copy
-      source: assets/csr.config
-
-    - path: /opt/certs/crt.config
-      generator: copy
-      source: assets/crt.config
+      source: assets/certificates/server.cnf
 
   packages:
     - openjdk-17-jre
@@ -85,20 +81,24 @@ instructions:
         #!/bin/bash
         set -eux
 
-        mkdir -p /opt/keycloak
+        touch /opt/certs/index.txt
+        echo '01' > /opt/certs/serial.txt
+        cd /opt/certs
+        openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out keycloak.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out keycloak.crt -infiles keycloak.csr
 
-        openssl req -x509 -newkey rsa:4096 -keyout /opt/certs/rootCA.key -out /opt/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
-        openssl genrsa -out /etc/ssl/private/keycloak.key 2048
-        openssl req -new -key /etc/ssl/private/keycloak.key -out /etc/ssl/private/keycloak.csr -config /opt/certs/csr.config
-        openssl x509 -req -in /etc/ssl/private/keycloak.csr -CA /opt/certs/rootCA.crt -CAkey /opt/certs/rootCA.key -CAcreateserial -out /etc/ssl/private/keycloak.crt -days 1825 -sha256 -extfile /opt/certs/crt.config
+
+        mkdir -p /opt/keycloak
+        cd /opt/keycloak
 
         wget -O /tmp/keycloak.tar.gz https://github.com/keycloak/keycloak/releases/download/{{image.serial}}/keycloak-{{image.serial}}.tar.gz
         tar -xvf /tmp/keycloak.tar.gz -C /tmp && cp -r /tmp/keycloak-{{image.serial}}/* /opt/keycloak/
 
         cat <<EOF > /opt/keycloak/conf/keycloak.conf
         hostname=0.0.0.0
-        https-certificate-file=/etc/ssl/private/keycloak.crt
-        https-certificate-key-file=/etc/ssl/private/keycloak.key
+        https-certificate-file=/opt/certs/keycloak.crt
+        https-certificate-key-file=/opt/certs/server.key
         EOF
 
         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64

@@ -1,5 +1,5 @@
 metadata:
-  name: Vault
+  name: Vault-Unsealed
   get_version_command: curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name'
   description: Vault is a free and source-available secrets management tool / secrets store.
   categories: Secrets management, Security
@@ -17,6 +17,54 @@ instructions:
     - path: /opt/certs/server.cnf
       generator: copy
       source: assets/certificates/server.cnf
+
+    - path: /opt/vault/init.sh
+      generator: dump
+      mode: "0755"
+      content: |-
+        #!/bin/bash
+
+        vault operator init > /var/vault/init.output
+        cat /var/vault/init.output | grep -E 'Initial Root Token:' | awk '{print $4}' > /var/vault/token
+        cat /var/vault/init.output | grep -E 'Unseal Key' | awk '{print $4}' > /var/vault/keys
+
+    - path: /opt/vault/unseal.sh
+      generator: dump
+      mode: "0755"
+      content: |-
+        #!/bin/bash
+
+        i=0
+        required_keys_nb=3
+        path=${1:-'/var/vault/keys'}
+        numbers=(1 2 3 4 5)
+        selected_numbers=(0)
+        selected_keys=()
+
+        select_key() {
+          while [[ "$i" -lt "$required_keys_nb" ]]; do
+            local random_number=0
+
+            while [[ "${selected_numbers[*]}" =~ "$random_number" ]]; do
+                index=$((RANDOM % ${#numbers[@]}))
+                random_number=${numbers[$index]}
+            done
+
+            selected_numbers+=($random_number)
+            numbers=(${numbers[@]/$random_number/})
+            selected_keys+=($(sed -n "${random_number}p" $path))
+
+            ((i++))
+          done
+
+          echo ${selected_keys[@]}
+        }
+
+        keys=$(select_key)
+
+        vault operator unseal "$(echo $keys| awk '{print $1}')"
+        vault operator unseal "$(echo $keys| awk '{print $2}')"
+        vault operator unseal "$(echo $keys| awk '{print $3}')"
 
     - path: /etc/vault.d/vault.env
       generator: dump
@@ -46,6 +94,53 @@ instructions:
           tls_cert_file = "/opt/certs/vault.crt"
           tls_key_file  = "/opt/certs/server.key"
         }
+
+    - path: /etc/systemd/system/vault-init.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description="HashiCorp Vault - Init daemon"
+        Requires=network-online.target vault.service
+        After=network-online.target vault.service
+        BindsTo=vault.service
+        ConditionFileNotEmpty=!/var/vault/keys
+        ConditionFileNotEmpty=!/var/vault/token
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/vault.d/vault.env
+        RemainAfterExit=yes
+        WorkingDirectory=/opt/vault
+        User=vault
+        ExecStart=/opt/vault/init.sh
+        ExecStart=/usr/bin/touch /var/vault/.initialized__
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - path: /etc/systemd/system/vault-unseal.service
+      generator: dump
+      mode: "0440"
+      content: |-
+        [Unit]
+        Description="HashiCorp Vault - Unseal daemon"
+        Requires=network-online.target vault.service
+        After=network-online.target vault.service
+        BindsTo=vault.service
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/vault.d/vault.env
+        RemainAfterExit=yes
+        WorkingDirectory=/opt/vault
+        User=vault
+        ExecStart=/usr/bin/cat /var/vault/.initialized__
+        ExecStart=/opt/vault/unseal.sh
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
 
     - path: /etc/systemd/system/vault.service
       generator: dump
@@ -109,6 +204,7 @@ instructions:
 
         mkdir /var/vault
 
+        touch /var/vault/{keys,token}
         touch /opt/certs/index.txt
         echo '01' > /opt/certs/serial.txt
         cd /opt/certs
@@ -118,4 +214,6 @@ instructions:
 
         chown vault:vault -R /opt /var/vault
 
+        systemctl enable vault-init.service
+        systemctl enable vault-unseal.service
         systemctl enable vault.service

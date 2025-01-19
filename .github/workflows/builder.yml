@@ -108,6 +108,17 @@ jobs:
           echo "ARTIFACT_SIZE=$(du -sh ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz | cut -f 1)" >> $GITHUB_ENV
           pwd && ls -lash
 
+      - name: Archive Image files
+        if: ${{steps.validity-checks.outputs.IS_BUILDABLE == 'true' && steps.validity-checks.outputs.IS_PUBLISHABLE == 'false'}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}"
+          path: |
+            ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-root.tar.xz
+            ./${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}-meta.tar.xz
+          compression-level: 0
+          retention-days: 1
+
       - name: Publish Image files
         if: ${{steps.validity-checks.outputs.IS_BUILDABLE == 'true' && steps.validity-checks.outputs.IS_PUBLISHABLE == 'true'}}
         run: |

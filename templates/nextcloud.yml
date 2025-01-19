@@ -10,9 +10,13 @@ metadata:
     - amd64
 instructions:
   files:
-    - path: /opt/certs/rootCA.config
+    - path: /opt/certs/ca.cnf
       generator: copy
-      source: assets/rootCA.config
+      source: assets/certificates/ca.cnf
+
+    - path: /opt/certs/server.cnf
+      generator: copy
+      source: assets/certificates/server.cnf
 
     - path: /opt/ssl.conf
       generator: dump
@@ -26,8 +30,8 @@ instructions:
                 CustomLog ${APACHE_LOG_DIR}/access.log combined
                 SSLEngine on
 
-                SSLCertificateFile      /etc/ssl/certs/rootCA.crt
-                SSLCertificateKeyFile   /etc/ssl/private/rootCA.key
+                SSLCertificateFile      /opt/certs/nextcould.crt
+                SSLCertificateKeyFile   /opt/certs/server.key
 
                 <FilesMatch "\.(?:cgi|shtml|phtml|php)$">
                         SSLOptions +StdEnvVars
@@ -131,7 +135,12 @@ instructions:
         #!/bin/bash
         set -eux
 
-        openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/rootCA.key -out /etc/ssl/certs/rootCA.crt -sha256 -days 3650 -nodes -config /opt/certs/rootCA.config
+        touch /opt/certs/index.txt
+        echo '01' > /opt/certs/serial.txt
+        cd /opt/certs
+        openssl req -x509 -config ca.cnf -newkey rsa:4096 -sha256 -nodes -out cacert.pem -outform PEM
+        openssl req -config server.cnf -newkey rsa:2048 -sha256 -nodes -out nextcloud.csr -outform PEM
+        openssl ca -batch -config ca.cnf -policy signing_policy -extensions signing_req -out nextcloud.crt -infiles nextcloud.csr
 
         wget -O /tmp/nextcloud.zip https://download.nextcloud.com/server/releases/nextcloud-{{image.serial}}.zip
         unzip /tmp/nextcloud.zip -d /tmp
