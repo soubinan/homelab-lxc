@@ -27,6 +27,8 @@ schema Metadata:
     distribution: str
     release: str
     architectures: [str]
+    help_message: str = """\
+    """
 
     check:
         distribution != Undefined, "Distribution should be explicitely set"
@@ -1282,6 +1284,12 @@ files = [
         generator = "dump"
         mode = "0655"
         content = _welcome_msg_script
+    }
+    {
+        path = "/etc/issue.d/61-help.issue"
+        generator = "dump"
+        mode = "0655"
+        content = _metadata.help_message
     }
     *_files_add
 ]
