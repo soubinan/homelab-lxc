@@ -8,6 +8,10 @@ metadata:
   release: bookworm
   architectures:
     - amd64
+  help_message: |
+    Required configurations updates:
+
+    Update the ExternalDomain (and ExternalPort if needed) in /opt/zitadel/.config to match externally used one.
 instructions:
   files:
     - path: /opt/certs/ca.cnf
