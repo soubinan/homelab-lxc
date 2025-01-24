@@ -87,9 +87,9 @@ instructions:
         #!/bin/bash
         set -eux
 
-        git clone https://github.com/hywax/mafl -b v{{ image.serial }} --depth 1 /app
+        git clone https://github.com/hywax/mafl -b v{{ image.serial }} --depth 1 /tmp/mafl
 
-        cd /app
+        cd /tmp/mafl
         rm yarn.lock
         npm install -g yarn
         npx @nuxt/telemetry disable
@@ -102,7 +102,7 @@ instructions:
         cp .example/config.yml /app/data/config.yml
         cp /app/extra/healthcheck.mjs /opt/mafl/extra/healthcheck.mjs
 
-        rm -rf /app
+        rm -rf /tmp/mafl
         touch /opt/mafl/.installed__
 
         systemctl enable mafl.service
