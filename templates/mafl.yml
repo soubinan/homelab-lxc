@@ -96,8 +96,9 @@ instructions:
         yarn install --non-interactive
         yarn run build
 
-        mkdir -p /opt/mafl/extra
+        mkdir -p /opt/mafl/extra /opt/mafl/data
         cp -r /app/.output/* /opt/mafl/
+        cp .example/config.yml /opt/mafl/data/config.yml
         cp /app/extra/healthcheck.mjs /opt/mafl/extra/healthcheck.mjs
 
         rm -rf /app
