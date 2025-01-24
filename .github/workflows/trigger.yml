@@ -9,9 +9,10 @@ on:
       - closed
     paths:
       - ".github/workflows/trigger.yml"
-      - "./templates/*"
+      - "./templates/**"
   schedule:
     - cron: "0 0 */7 * *"
+  workflow_dispatch:
 
 jobs:
   init:
