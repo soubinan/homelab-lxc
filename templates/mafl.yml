@@ -97,12 +97,11 @@ instructions:
         yarn run build
 
         mkdir -p /opt/mafl/extra /opt/mafl/data /app/data
-        cp -r /app/.output/* /opt/mafl/
+        cp -r .output/* /opt/mafl/
         cp .example/config.yml /opt/mafl/data/config.yml
         cp .example/config.yml /app/data/config.yml
-        cp /app/extra/healthcheck.mjs /opt/mafl/extra/healthcheck.mjs
+        cp extra/healthcheck.mjs /opt/mafl/extra/healthcheck.mjs
 
-        rm -rf /tmp/mafl
         touch /opt/mafl/.installed__
 
         systemctl enable mafl.service
