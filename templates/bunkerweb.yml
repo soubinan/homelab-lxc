@@ -55,7 +55,7 @@ instructions:
 
         export UI_WIZARD=1
         curl -s https://repo.bunkerweb.io/install/script.deb.sh | bash
-        apt install -y bunkerweb={{image.serial}}
+        apt -E install -y bunkerweb={{image.serial}}
         apt-mark hold nginx bunkerweb
 
         systemctl disable nginx.service
