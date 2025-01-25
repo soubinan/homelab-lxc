@@ -17,8 +17,6 @@ instructions:
         PORT=3000
         NEXT_TELEMETRY_DISABLED=1
         NODE_ENV="production"
-        NODE_OPTIONS="--no-experimental-fetch"
-        HOSTNAME="127.0.0.1"
         DEFAULT_COLOR_SCHEME="dark"
 
     - path: /etc/systemd/system/mafl.service
@@ -28,14 +26,14 @@ instructions:
         [Unit]
         Description=mafl Dashboard
         After=network.target
-        ConditionPathExists=/opt/mafl/.installed__
+        ConditionPathExists=/app/.installed__
 
         [Service]
         Type=simple
-        WorkingDirectory=/opt/mafl
+        WorkingDirectory=/app/.output
         EnvironmentFile=/opt/mafl/settings.env
         PIDFile=/opt/mafl/mafl.pid
-        ExecStart=/usr/bin/node /opt/mafl/server/index.mjs
+        ExecStart=/usr/bin/node ./server/index.mjs
         Restart=always
 
         [Install]
@@ -87,21 +85,17 @@ instructions:
         #!/bin/bash
         set -eux
 
-        git clone https://github.com/hywax/mafl -b v{{ image.serial }} --depth 1 /tmp/mafl
+        git clone https://github.com/hywax/mafl -b v{{ image.serial }} --depth 1 /app
 
-        cd /tmp/mafl
+        cd /app
         rm yarn.lock
         npm install -g yarn
         npx @nuxt/telemetry disable
         yarn install --non-interactive
-        yarn run build
+        NODE_ENV=production yarn run build
+        mkdir -p data
+        cp .example/config.yml data/config.yml
 
-        mkdir -p /opt/mafl/extra /opt/mafl/data /app/data
-        cp -r .output/* /opt/mafl/
-        cp .example/config.yml /opt/mafl/data/config.yml
-        cp .example/config.yml /app/data/config.yml
-        cp extra/healthcheck.mjs /opt/mafl/extra/healthcheck.mjs
-
-        touch /opt/mafl/.installed__
+        touch .installed__
 
         systemctl enable mafl.service
