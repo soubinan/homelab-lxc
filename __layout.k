@@ -1039,7 +1039,7 @@ _welcome_msg_cron = """\
 _welcome_msg_script = """\
 #!/bin/bash
 
-ports=$(ss -ptln "sport > :1023 or sport = :80 or sport = :443" | grep -vE 'systemd|127.0.0.|%lo|::1|Netid|Local|next-router' | awk '{print $4}' | awk -F: '{print $NF}' | sort -u)
+ports=$(ss -ptln "sport > :1023 or sport = :80 or sport = :443" | grep -vE 'systemd|sshd|127.0.0.|%lo|::1|Netid|Local|next-router' | awk '{print $4}' | awk -F: '{print $NF}' | sort -u)
 ips=$(ip a|grep 'inet '|grep -v '127.0.0'|awk '{print $2}')
 
 printf '\\n'
@@ -1055,7 +1055,7 @@ printf '| %-10s | %-20s |\\n' 'Ports' 'Process'
 printf '+------------+----------------------+\\n'
 
 while read -r port; do
-    application=$(ss -lptn "sport == :$port" | grep -vE 'Netid|Local' | awk '{print $6}' | cut -d'"' -f2)
+    application=$(ss -lptn "sport == :$port" | grep -vE 'systemd|sshd|Netid|Local' | awk '{print $6}' | cut -d'"' -f2)
     printf '| %-10s | %-20s |\\n' $port $application
 done <<< $ports
 
