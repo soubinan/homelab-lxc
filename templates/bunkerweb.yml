@@ -50,12 +50,13 @@ instructions:
         echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
 
         apt update
-        FULL_VERSION=$(apt-cache madison nginx | grep 1.26.2 | head -n1 | awk '{print $3}')
+        FULL_VERSION=$(apt-cache madison nginx | grep 1.26.3 | head -n1 | awk '{print $3}')
         apt install -y nginx=$FULL_VERSION
 
         export UI_WIZARD=1
         curl -s https://repo.bunkerweb.io/install/script.deb.sh | bash
-        apt install -y bunkerweb={{image.serial}}
+        apt update
+        apt -E install -y bunkerweb={{image.serial}}
         apt-mark hold nginx bunkerweb
 
         systemctl disable nginx.service
