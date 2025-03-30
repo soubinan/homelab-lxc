@@ -39,8 +39,6 @@ instructions:
 
   packages:
     - jq
-    - jsvc
-    - nvidia-openjdk-8-jre
     - libssl-dev
 
   actions:
@@ -51,6 +49,12 @@ instructions:
         set -eux
 
         cd /tmp
+
+        wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null
+        echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
+
+        apt update
+        apt install -y temurin-17-jdk jsvc
 
         wget -qL https://repo.mongodb.org/apt/debian/dists/buster/mongodb-org/4.4/main/binary-amd64/mongodb-org-server_4.4.29_amd64.deb
         apt-get install -fy ./mongodb-org-server*_amd64.deb
