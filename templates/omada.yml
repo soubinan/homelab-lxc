@@ -40,7 +40,6 @@ instructions:
   packages:
     - jq
     - jsvc
-    - openjdk-17-jre
     - libssl-dev
 
   actions:
@@ -51,6 +50,9 @@ instructions:
         set -eux
 
         cd /tmp
+
+        wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.deb
+        apt install ./jdk-17_linux-x64_bin.deb
 
         wget -qL https://repo.mongodb.org/apt/debian/dists/buster/mongodb-org/4.4/main/binary-amd64/mongodb-org-server_4.4.29_amd64.deb
         apt-get install -fy ./mongodb-org-server*_amd64.deb
