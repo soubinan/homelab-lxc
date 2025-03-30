@@ -96,9 +96,8 @@ instructions:
         export SHELL=/bin/bash
         export ENV=~/.bashrc
         export CYPRESS_INSTALL_BINARY=0
-        export PNPM_VERSION=9
 
-        curl -fsSL https://get.pnpm.io/install.sh | bash -
+        npm install -g pnpm@latest-9
         source $ENV
 
         git clone https://github.com/Fallenbagel/jellyseerr -b v{{ image.serial }} --depth 1 /opt/jellyseerr
