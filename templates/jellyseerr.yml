@@ -96,6 +96,7 @@ instructions:
         export SHELL=/bin/bash
         export ENV=~/.bashrc
         export CYPRESS_INSTALL_BINARY=0
+        export PNPM_VERSION=9
 
         curl -fsSL https://get.pnpm.io/install.sh | bash -
         source $ENV
