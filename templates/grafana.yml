@@ -9,6 +9,10 @@ metadata:
   architectures:
     - amd64
 instructions:
+  packages:
+    - apt-transport-https
+    - software-properties-common
+
   actions:
     - trigger: post-files
       pongo: true
@@ -21,7 +25,7 @@ instructions:
 
         echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee -a /etc/apt/sources.list.d/grafana.list
 
-        apt-get update
-        apt-get install -y grafana
+        apt update
+        apt install -y grafana
 
         systemctl enable grafana-server.service
