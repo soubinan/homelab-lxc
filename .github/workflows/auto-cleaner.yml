@@ -30,7 +30,7 @@ jobs:
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
 
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Use Node.js ${{env.NODE_VERSION}}
         uses: actions/setup-node@v5
