@@ -22,7 +22,7 @@ jobs:
 
       - name: List changed templates
         id: all-changed-templates-list
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@v47
         with:
           files: |
             templates/**
