@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
   image-build:
     if: github.event.action != 'closed' || (github.event.action == 'closed' && github.event.pull_request.merged)
