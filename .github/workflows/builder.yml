@@ -110,7 +110,7 @@ jobs:
 
       - name: Archive Image files
         if: ${{steps.validity-checks.outputs.IS_BUILDABLE == 'true' && steps.validity-checks.outputs.IS_PUBLISHABLE == 'false'}}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "${{needs.init.outputs.app_name}}-${{needs.init.outputs.app_version}}-${{matrix.architectures}}"
           path: |
